@@ -3,37 +3,85 @@ package agh.ics.oop;
 import agh.ics.oop.model.*;
 
 import java.util.ArrayList;
-import java.util.stream.Collectors;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Simulation implements Runnable {
-    private WorldMap worldMap;
-    private int startingGrassAmount;
-    private int dailyGrassAmount;
-    private int grassEnergy;
+    private final WorldMap worldMap;
+    private final SimulationConfig config;
+    private ScheduledExecutorService executor;
 
-    private void simulateDay() {
-        // Remove dead animals
+    public Simulation(WorldMap worldMap, SimulationConfig config) {
+        this.worldMap = worldMap;
+        this.config = config;
+    }
+
+    @Override
+    public void run() {
+        removeDead();
+        consume();
+        reproduce();
+        growPlants();
+    }
+
+    public void start() {
+        if (isRunning())
+            throw new IllegalStateException("Cannot start already started Simulation");
+        executor = Executors.newSingleThreadScheduledExecutor();
+        executor.scheduleWithFixedDelay(this, 1, 1, TimeUnit.SECONDS);
+    }
+
+    public void stop() {
+        try {
+            executor.shutdown();
+            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt(); // Pass interrupt to parent thread
+        }
+    }
+
+    private boolean isRunning() {
+        return executor != null && !executor.isShutdown();
+    }
+
+    private void removeDead() {
         worldMap.getAnimalsFlat()
                 .filter(Animal::isDead)
                 .forEach(worldMap::remove);
-
-        // Move
-        worldMap.getAnimalsFlat().forEach(worldMap::move);
-        // Consume
-        worldMap.getAnimalsGrouped().forEach(entry -> {
-            if (worldMap.tryConsumeGrass(entry.first())) {
-                entry.second().getFirst().consumeGrass(grassEnergy);
-            }
-        });
-
-        // Reproduce
-        worldMap.growGrass(dailyGrassAmount); // Place grass
     }
 
+    private void move() {
+        worldMap.getAnimalsFlat().forEach(worldMap::move);
+    }
 
-    public void run() {
-        while (true) {
-            simulateDay();
-        }
+    private void consume() {
+        worldMap.getAnimalsGroupedNSorted().forEach(cell -> {
+            if (worldMap.tryConsumePlant(cell.first())) {
+                cell.second().getFirst().consume();
+            }
+        });
+    }
+
+    private void reproduce() {
+        final var newborns = new ArrayList<Animal>();
+        worldMap.getAnimalsGroupedNSorted().forEach(cell -> {
+            final var animals = cell.second();
+            for (int i = 1; i < animals.size(); i += 2) {
+                final var animal1 = animals.get(i - 1);
+                final var animal2 = animals.get(i);
+                final var child = animal1.tryReproduce(animal2);
+                if (child == null) break;
+                newborns.add(child);
+            }
+        });
+        newborns.forEach(worldMap::place);
+    }
+
+    private void growPlants() {
+        worldMap.growPlants(config.plantsPerDay());
     }
 }

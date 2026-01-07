@@ -3,18 +3,34 @@ package agh.ics.oop.model;
 import agh.ics.oop.model.util.Pair;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class WorldMap implements MoveValidator {
     private final int width;
     private final int height;
+    private final int jungleMinY;
+    private final int jungleMaxY;
     private final Map<Vector2d, Set<Animal>> animals = new HashMap<>();
-    private final Map<Vector2d, Grass> grassMap = new HashMap<>();
+    private final Map<Vector2d, Plant> plantMap = new HashMap<>();
+    private final RandomSet<Vector2d> emptyJungleFields;
+    private final RandomSet<Vector2d> emptyStepFields;
 
-    public WorldMap(int width, int height, int numOfGrass) {
+    public WorldMap(int width, int height, int numOfPlants) {
         this.width = width;
         this.height = height;
+
+        int jungleHeight = (int) Math.max(1, height * 0.2);
+        int middle = height / 2;
+        jungleMinY = middle - (jungleHeight / 2);
+        jungleMaxY = jungleMinY + jungleHeight - 1;
+
+        int mapArea = width * height;
+        emptyJungleFields  = new RandomSet<>((int)Math.max(1, mapArea * 0.4));
+        emptyStepFields = new RandomSet<>((int)Math.max(1, mapArea * 1.6));
+        fillEmptyPlantFields();
+        growPlants(numOfPlants);
     }
 
     @Override
@@ -50,11 +66,11 @@ public class WorldMap implements MoveValidator {
     public boolean place(Animal animal) {
         final var position = animal.getPosition();
         if (!animals.containsKey(position)) {
-            animals.put(position, Set.of(animal));
-            return true;
-        } else {
-            return animals.get(position).add(animal);
+            final var set = new HashSet<Animal>(4);
+            animals.put(position, set);
         }
+        return animals.get(position).add(animal);
+
     }
 
     public boolean remove(Animal animal) {
@@ -71,7 +87,7 @@ public class WorldMap implements MoveValidator {
         return animals.values().stream().flatMap(Set::stream);
     }
 
-    public Stream<Pair<Vector2d, List<Animal>>> getAnimalsGrouped() {
+    public Stream<Pair<Vector2d, List<Animal>>> getAnimalsGroupedNSorted() {
         return animals
                 .entrySet()
                 .stream()
@@ -84,14 +100,157 @@ public class WorldMap implements MoveValidator {
                 );
     }
 
-    public void growGrass(int amount) {
-
+    private void fillEmptyPlantFields() {
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < jungleMinY; y++) {
+                emptyStepFields.add(new Vector2d(x, y));
+            }
+            for (int y = jungleMinY; y <= jungleMaxY; y++) {
+                emptyStepFields.add(new Vector2d(x, y));
+            }
+            for (int y = jungleMaxY + 1; y < height; y++) {
+                emptyStepFields.add(new Vector2d(x, y));
+            }
+        }
     }
 
-    public boolean tryConsumeGrass(Vector2d position) {
-        return grassMap.remove(position) != null;
+    private Vector2d getRandomPlantPosition() {
+        final var random = ThreadLocalRandom.current();
+        if (emptyJungleFields.isEmpty()) {
+            return emptyStepFields.removeRandom(random);
+        }
+        if (emptyStepFields.isEmpty()) {
+            return emptyJungleFields.removeRandom(random);
+        }
+
+        int diceRoll = random.nextInt(100);
+        if (diceRoll < 80) {
+            return emptyJungleFields.removeRandom(random);
+        }
+        return emptyStepFields.removeRandom(random);
     }
 
+    public void growPlants(int count) {
+        count = Math.min(count, emptyJungleFields.size() + emptyStepFields.size());
+        for (int i = 0; i < count; i++) {
+            final var position = getRandomPlantPosition();
+            plantMap.put(position, new Plant(position));
+        }
+    }
+
+    private boolean isJungle(Vector2d position) {
+        return position.y() >= jungleMinY && position.y() <= jungleMaxY;
+    }
+
+    public boolean tryConsumePlant(Vector2d position) {
+        boolean wasConsumed = plantMap.remove(position) != null;
+        if (wasConsumed) {
+            if (isJungle(position)) {
+                emptyJungleFields.add(position);
+            } else {
+                emptyStepFields.add(position);
+            }
+        }
+        return wasConsumed;
+    }
+
+
+//    protected final MapVisualizer visualizer = new MapVisualizer(this);
+//
+//    private final Id id = Id.generateUUID();
+//    private final Map<Vector2d, Animal> animals = new HashMap<>();
+//    private final HashSet<MapChangeListener> listeners = new HashSet<>();
+//
+//    public AbstractWorldMap() {
+//        boundingBox = new Boundary(
+//            new Vector2d(Integer.MIN_VALUE, Integer.MIN_VALUE),
+//            new Vector2d(Integer.MAX_VALUE, Integer.MAX_VALUE)
+//        );
+//    }
+//
+//    public AbstractWorldMap(Vector2d lowerLeft, Vector2d upperRight) {
+//        boundingBox = new Boundary(lowerLeft, upperRight);
+//    }
+//
+//    @Override
+//    public void place(WorldElement element) throws IncorrectPositionException {
+//        if (!(element instanceof Animal)) {
+//            throw new IllegalArgumentException(element + " is not an instance of Animal class");
+//        }
+//        final var animal = (Animal)element;
+//        final var position = animal.getPosition();
+//        final var canMove = canMoveTo(position);
+//        if (canMove) {
+//            animals.put(position, animal);
+//            mapChanged("Animal has been placed on " + position);
+//        } else {
+//            throw new IncorrectPositionException(position);
+//        }
+//    }
+//
+//    @Override
+//    public void move(Animal animal, MoveDirection direction) {
+//        if (animal.equals(objectAt(animal.getPosition()))) {
+//            var oldPosition = animal.getPosition();
+//            var oldOrientation = animal.getOrientation();
+//
+//            animal.move(direction, this);
+//
+//            var newPosition = animal.getPosition();
+//            var newOrientation = animal.getOrientation();
+//            if (!newPosition.equals(oldPosition)) {
+//                animals.remove(oldPosition, animal);
+//                animals.put(newPosition, animal);
+//                mapChanged("Animal has moved from " + oldPosition +  " to " + newPosition);
+//            } else if (!newOrientation.equals(oldOrientation)) {
+//                mapChanged("Animal has changed its orientation from " + oldOrientation + " to " + newOrientation);
+//            }
+//        }
+//    }
+//
+//    @Override
+//    public boolean isOccupied(Vector2d position) {
+//        return animals.containsKey(position);
+//    }
+//
+//    @Override
+//    public WorldElement objectAt(Vector2d position) {
+//        return animals.get(position);
+//    }
+//
+//    @Override
+//    public boolean canMoveTo(Vector2d position) {
+//        return position.follows(boundingBox.lowerLeft()) && position.precedes(boundingBox.upperRight()) && !isOccupied(position);
+//    }
+//
+//    @Override
+//    public String toString() {
+//        final var boundingBox = getCurrentBounds();
+//        return visualizer.draw(boundingBox.lowerLeft(), boundingBox.upperRight());
+//    }
+//
+//    public List<WorldElement> getElements() {
+//        return List.copyOf(animals.values());
+//    }
+//
+//    public abstract Boundary getCurrentBounds();
+//
+//    public boolean registerListener(MapChangeListener listener) {
+//        return listeners.add(listener);
+//    }
+//
+//    public boolean unregisterListener(MapChangeListener listener) {
+//        return listeners.remove(listener);
+//    }
+//
+//    protected void mapChanged(String message) {
+//        listeners.forEach(listener -> listener.mapChanged(this, message));
+//    }
+//
+//    @Override
+//    public Id getId() {
+//        return id;
+//    }
 
 //    protected final MapVisualizer visualizer = new MapVisualizer(this);
 //

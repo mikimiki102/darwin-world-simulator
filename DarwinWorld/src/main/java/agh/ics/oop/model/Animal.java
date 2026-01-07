@@ -1,25 +1,22 @@
 package agh.ics.oop.model;
 
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.Random;
 
-public class Animal implements Entity {
+public class Animal {
     private Vector2d position;
     private int energy;
-    private final int generation;
+    private int age = 0;
     private int numOfChildren = 0;
     private MapDirection orientation = MapDirection.NORTH;
-    private Iterator<Integer> gens;
+    private final Genome genome;
+    private final SimulationConfig config;
 
-    public Animal(int generation) {
-        position = new Vector2d(2, 2);
-        this.generation = generation;
-    }
-
-    public Animal(Vector2d position, int generation) {
+    public Animal(Vector2d position, Genome genome, SimulationConfig config) {
         this.position = position;
-        this.generation = generation;
+        this.genome = genome;
+        this.config = config;
+        energy = config.energyToChild();
     }
 
     @Override
@@ -32,11 +29,13 @@ public class Animal implements Entity {
     }
 
     public void move(MoveValidator validator) {
-        orientation = orientation.rotate(gens.next());
+        orientation = orientation.rotate(genome.getNext());
         position = position.add(orientation.toUnitVector());
         final var pair = validator.toWorld(position, orientation);
         position = pair.first();
         orientation = pair.second();
+        age += 1;
+        energy -= config.energyLossPreDay();
     }
 
     public Vector2d getPosition() {
@@ -50,7 +49,7 @@ public class Animal implements Entity {
     public static Comparator<Animal> getComparator() {
         return Comparator
                 .comparing(Animal::getEnergy).reversed()
-                .thenComparing(Animal::getGeneration)
+                .thenComparing(Animal::getAge)
                 .thenComparing(Animal::getNumOfChildren).reversed()
                 .thenComparing(Animal::getRandom);
     }
@@ -59,8 +58,8 @@ public class Animal implements Entity {
         return energy;
     }
 
-    public int getGeneration() {
-        return generation;
+    public int getAge() {
+        return age;
     }
 
     public int getNumOfChildren() {
@@ -71,7 +70,33 @@ public class Animal implements Entity {
         return new Random().nextInt();
     }
 
-    public void consumeGrass(int grassEnergy) {
-        energy += grassEnergy;
+    public void consume() {
+        energy += config.plantEnergy();
+    }
+
+    public Animal tryReproduce(Animal partner) {
+        final int needed_energy = config.energyToReproduce() ;
+        if (energy < needed_energy || partner.energy < needed_energy)
+            return null;
+
+        Animal stronger, weaker;
+        if (energy >= partner.energy) {
+            stronger = this;
+            weaker = partner;
+        } else {
+            stronger = partner;
+            weaker = this;
+        }
+
+        final var energyLosses = config.parentsEnergyLoss();
+        weaker.energy -= energyLosses.first();
+        stronger.energy -= energyLosses.second();
+
+        final var childGenome = new Genome(stronger, weaker, config.minMutations(), config.maxMutations());
+        return new Animal(position, childGenome, config);
+    }
+
+    public Genome getGenome() {
+        return genome;
     }
 }
