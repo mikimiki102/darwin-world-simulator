@@ -8,11 +8,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class Simulation implements Runnable {
-    private final BasicWorldMap worldMap;
-    private final SimulationConfig config;
+    protected final WorldMap worldMap;
+    protected final SimulationConfig config;
     private ScheduledExecutorService executor;
 
-    public Simulation(BasicWorldMap worldMap, SimulationConfig config) {
+    public Simulation(WorldMap worldMap, SimulationConfig config) {
         this.worldMap = worldMap;
         this.config = config;
     }
@@ -60,7 +60,7 @@ public class Simulation implements Runnable {
         worldMap.getAnimalsFlat().forEach(worldMap::move);
     }
 
-    private void consume() {
+    protected void consume() {
         worldMap.getAnimalsGroupedNSorted().forEach(cell -> {
             if (worldMap.tryConsumePlant(cell.first())) {
                 cell.second().getFirst().consume();

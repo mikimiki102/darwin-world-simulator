@@ -40,10 +40,10 @@ public enum MapDirection {
         return enumValues[index];
     }
 
-    public MapDirection rotate(int amount) {
+    public MapDirection rotate(int gen) {
         final var enumValues = MapDirection.values();
-        amount = (amount % enumValues.length) + enumValues.length;
-        final int index = (this.ordinal() + amount) % enumValues.length;
+        gen = (gen % enumValues.length) + enumValues.length;
+        final int index = (this.ordinal() + gen) % enumValues.length;
         return enumValues[index];
     }
 

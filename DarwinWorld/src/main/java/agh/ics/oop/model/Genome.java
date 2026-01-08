@@ -10,7 +10,7 @@ public class Genome {
 
     public Genome(int length) {
         this.genes = new int[length];
-        final var random = new ThreadLocalRandom.current();
+        final var random = ThreadLocalRandom.current();
         for (int i = 0; i < length; i++) {
             this.genes[i] = random.nextInt(MapDirection.values().length);
         }
@@ -20,7 +20,7 @@ public class Genome {
     public Genome(Animal stronger, Animal weaker, int minMutations, int maxMutations) {
         int length = stronger.getGenome().genes.length;
         this.genes = new int[length];
-        final var random = new ThreadLocalRandom.current();
+        final var random = ThreadLocalRandom.current();
 
         double energySum = stronger.getEnergy() + weaker.getEnergy();
         int splitPoint = (int) Math.round((double) stronger.getEnergy() / energySum * length);
@@ -39,7 +39,7 @@ public class Genome {
     }
 
     private void applyMutations(int min, int max) {
-        final var random = new ThreadLocalRandom.current();
+        final var random = ThreadLocalRandom.current();
         int numberOfMutations = random.nextInt(max - min + 1) + min;
 
         final var indices = new ArrayList<Integer>();

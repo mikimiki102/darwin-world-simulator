@@ -2,7 +2,8 @@ package agh.ics.oop.model;
 
 import java.util.*;
 
-public class Animal extends WorldElement {
+public class Animal implements WorldElement {
+    private Vector2d position;
     private int energy;
     private int age = 0;
     private int numOfChildren = 0;
@@ -11,15 +12,19 @@ public class Animal extends WorldElement {
     private final SimulationConfig config;
 
     public Animal(Vector2d position, Genome genome, SimulationConfig config) {
-        super(position, getDefaultEffects());
+        this.position = position;
         this.genome = genome;
         this.config = config;
         energy = config.energyToChild();
-        addDefaultEffects();
     }
 
     @Override
-    public String toDisplay() {
+    public Vector2d getPosition() {
+        return position;
+    }
+
+    @Override
+    public String toString() {
         return orientation.toString();
     }
 
@@ -33,8 +38,8 @@ public class Animal extends WorldElement {
         final var pair = validator.computePosition(position, orientation);
         position = pair.first();
         orientation = pair.second();
-        effects.forEach(effect -> effect.apply(this, config));
-        effects.removeIf(AnimalEffect::isExpired);
+        age += 1;
+        energy -= config.energyLossPreDay();
     }
 
     public MapDirection getOrientation() {
@@ -53,8 +58,8 @@ public class Animal extends WorldElement {
         return energy;
     }
 
-    public void addEnergy(int amount) {
-        energy += amount;
+    public void lossEnergy(int amount) {
+        energy -= amount;
     }
 
     public int getAge() {
@@ -101,19 +106,5 @@ public class Animal extends WorldElement {
 
     public Genome getGenome() {
         return genome;
-    }
-
-    private static Set<AnimalEffect> getDefaultEffects() {
-        final var effects = new HashSet<AnimalEffect>();
-        effects.add(new DailyEnergyLossEffect());
-        effects.add(new DailyAgingEffect());
-        return effects
-    }
-
-    public void addEffect(AnimalEffect effect) {
-        if (effects.contains(effect)) {
-            effects.remove(effect);
-        }
-        effects.add(effect);
     }
 }
