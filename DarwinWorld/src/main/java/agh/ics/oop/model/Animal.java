@@ -1,21 +1,49 @@
 package agh.ics.oop.model;
 
+import agh.ics.oop.model.util.Pair;
+
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Animal implements WorldElement {
     private Vector2d position;
-    private int energy;
-    private int age = 0;
-    private int numOfChildren = 0;
     private MapDirection orientation = MapDirection.NORTH;
     private final Genome genome;
-    private final SimulationConfig config;
+    private int energy;
+    private int birthday;
+    private List<Animal> children = new ArrayList<>();
 
-    public Animal(Vector2d position, Genome genome, SimulationConfig config) {
+    public static class Reproducer {
+        private final int neededEnergy;
+        private final int energyToChild;
+        private final Pair<Integer, Integer> parentEnergyLoss;
+        private final int minMutations;
+        private final int maxMutations;
+
+        public Reproducer(int neededEnergy, int energyToChild, int minMutations, int maxMutations) {
+            this.neededEnergy = neededEnergy;
+            this.energyToChild = energyToChild;
+            this.parentEnergyLoss = new Pair<>(energyToChild - energyToChild / 2, energyToChild / 2);
+            this.minMutations = minMutations;
+            this.maxMutations = maxMutations;
+        }
+
+        public Optional<Animal> tryReproduce(Animal animal1, Animal animal2, int day) {
+            if (!animal1.canReproduce(neededEnergy) || !animal2.canReproduce(neededEnergy))
+                return Optional.empty();
+            final var childGenome = new Genome(animal1, animal2, minMutations, maxMutations);
+            final var child = new Animal(animal1.getPosition(), childGenome, energyToChild, day);
+            animal1.loseEnergy(parentEnergyLoss.first());
+            animal2.loseEnergy(parentEnergyLoss.second());
+            return Optional.of(child);
+        }
+    }
+
+    public Animal(Vector2d position, Genome genome, int energy, int birthday) {
         this.position = position;
         this.genome = genome;
-        this.config = config;
-        energy = config.energyToChild();
+        this.energy = energy;
+        this.birthday = birthday;
     }
 
     @Override
@@ -38,8 +66,6 @@ public class Animal implements WorldElement {
         final var pair = validator.computePosition(position, orientation);
         position = pair.first();
         orientation = pair.second();
-        age += 1;
-        energy -= config.energyLossPreDay();
     }
 
     public MapDirection getOrientation() {
@@ -49,8 +75,8 @@ public class Animal implements WorldElement {
     public static Comparator<Animal> getComparator() {
         return Comparator
                 .comparing(Animal::getEnergy).reversed()
-                .thenComparing(Animal::getAge)
-                .thenComparing(Animal::getNumOfChildren).reversed()
+                .thenComparing(Animal::getBirthday)
+                .thenComparing(Animal::getNumberOfChildern).reversed()
                 .thenComparing(Animal::getRandom);
     }
 
@@ -58,50 +84,28 @@ public class Animal implements WorldElement {
         return energy;
     }
 
-    public void lossEnergy(int amount) {
+    public void loseEnergy(int amount) {
         energy -= amount;
     }
 
-    public int getAge() {
-        return age;
+    public int getBirthday() {
+        return birthday;
     }
 
-    public void increaseAge(int amount) {
-        age += amount;
+    private int getNumberOfChildern() {
+        return children.size();
     }
 
-    public int getNumOfChildren() {
-        return numOfChildren;
+    private int getRandom() {
+        return ThreadLocalRandom.current().nextInt();
     }
 
-    public int getRandom() {
-        return new Random().nextInt();
+    public void increaseEnergy(int amount) {
+        energy += amount;
     }
 
-    public void consume() {
-        energy += config.plantEnergy();
-    }
-
-    public Animal tryReproduce(Animal partner) {
-        final int needed_energy = config.energyToReproduce() ;
-        if (energy < needed_energy || partner.energy < needed_energy)
-            return null;
-
-        Animal stronger, weaker;
-        if (energy >= partner.energy) {
-            stronger = this;
-            weaker = partner;
-        } else {
-            stronger = partner;
-            weaker = this;
-        }
-
-        final var energyLosses = config.parentsEnergyLoss();
-        weaker.energy -= energyLosses.first();
-        stronger.energy -= energyLosses.second();
-
-        final var childGenome = new Genome(stronger, weaker, config.minMutations(), config.maxMutations());
-        return new Animal(position, childGenome, config);
+    public boolean canReproduce(int energyNeeded) {
+        return energy >= energyNeeded;
     }
 
     public Genome getGenome() {

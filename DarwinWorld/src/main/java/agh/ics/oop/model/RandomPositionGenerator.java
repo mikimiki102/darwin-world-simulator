@@ -9,6 +9,7 @@ public class RandomPositionGenerator implements Iterable<Vector2d> {
     private final Random random;
 
     public RandomPositionGenerator(int n, Random random) {
+        // TODO: rework - needs to generate position based on width and height
         final var densityFactor = 10;
         if (n > 0) {
             this.count = n;

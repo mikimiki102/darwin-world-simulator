@@ -23,7 +23,6 @@ public class RandomPositionIterator implements Iterator<Vector2d> {
         return i < count;
     }
 
-
     @Override
     public Vector2d next() {
         if (!hasNext()) {

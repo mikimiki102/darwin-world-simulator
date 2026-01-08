@@ -1,15 +1,20 @@
 package agh.ics.oop.model;
 
+import agh.ics.oop.model.util.Pair;
+
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Genome {
+    private final Optional<Pair<Animal, Animal>> parents;
     private final int[] genes;
     private int currentIndex;
 
     public Genome(int length) {
-        this.genes = new int[length];
+        parents = Optional.empty();
+        genes = new int[length];
         final var random = ThreadLocalRandom.current();
         for (int i = 0; i < length; i++) {
             this.genes[i] = random.nextInt(MapDirection.values().length);
@@ -17,11 +22,16 @@ public class Genome {
         this.currentIndex = random.nextInt(length);
     }
 
-    public Genome(Animal stronger, Animal weaker, int minMutations, int maxMutations) {
-        int length = stronger.getGenome().genes.length;
-        this.genes = new int[length];
-        final var random = ThreadLocalRandom.current();
+    public Genome(Animal animal1, Animal animal2, int minMutations, int maxMutations) {
+        final var sorted = sortByStronger(animal1, animal2);
+        final var stronger = sorted.first();
+        final var weaker = sorted.second();
+        parents = Optional.of(sorted);
 
+        int length = stronger.getGenome().genes.length;
+        genes = new int[length];
+
+        final var random = ThreadLocalRandom.current();
         double energySum = stronger.getEnergy() + weaker.getEnergy();
         int splitPoint = (int) Math.round((double) stronger.getEnergy() / energySum * length);
         boolean strongerOnLeft = random.nextBoolean();
@@ -36,6 +46,13 @@ public class Genome {
 
         applyMutations(minMutations, maxMutations);
         this.currentIndex = random.nextInt(length);
+    }
+
+    private Pair<Animal, Animal> sortByStronger(Animal animal1, Animal animal2) {
+        if (animal1.getEnergy() >= animal2.getEnergy()) {
+            return new Pair<>(animal1, animal2);
+        }
+        return new Pair<>(animal2, animal1);
     }
 
     private void applyMutations(int min, int max) {
@@ -56,5 +73,9 @@ public class Genome {
         final int gen = genes[currentIndex];
         currentIndex = (currentIndex + 1) % genes.length;
         return gen;
+    }
+
+    public Optional<Pair<Animal, Animal>> getParents() {
+        return parents;
     }
 }

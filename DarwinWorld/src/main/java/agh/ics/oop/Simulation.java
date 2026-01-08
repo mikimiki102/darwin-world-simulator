@@ -1,29 +1,61 @@
 package agh.ics.oop;
 
 import agh.ics.oop.model.*;
+import agh.ics.oop.model.util.Pair;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 public class Simulation implements Runnable {
-    protected final WorldMap worldMap;
-    protected final SimulationConfig config;
-    private ScheduledExecutorService executor;
+    public record Config(
+            int width,
+            int height,
 
-    public Simulation(WorldMap worldMap, SimulationConfig config) {
-        this.worldMap = worldMap;
+            int startPlantCount,
+            int plantsPerDay,
+
+            int startAnimalCount,
+            int startAnimalEnergy,
+
+            int energyToReproduce,
+            int energyLossPreDay,
+            int energyToChild,
+            int minMutations,
+            int maxMutations,
+            int plantEnergy,
+            int genomeLength
+    ) { }
+
+    private final Simulation.Config config;
+    protected final WorldMap worldMap;
+    private ScheduledExecutorService executor;
+    private int day = 0;
+    private final Animal.Reproducer reproducer;
+
+    public Simulation(Simulation.Config config, WorldMap worldMap) {
         this.config = config;
+        this.worldMap = worldMap;
+        worldMap.growPlants(config.plantsPerDay());
+        reproducer = new Animal.Reproducer(
+                config.energyToReproduce(),
+                config.energyToChild(),
+                config.minMutations(),
+                config.maxMutations()
+        );
     }
 
     @Override
     public void run() {
+        day += 1;
         removeDead();
         move();
         consume();
         reproduce();
-        processPlants();
+        growPlants();
     }
 
     public void start() {
@@ -49,6 +81,10 @@ public class Simulation implements Runnable {
         return executor != null && !executor.isShutdown();
     }
 
+    private void populate() {
+        new RandomPositionGenerator(config.startAnimalCount, ThreadLocalRandom.current());
+    }
+
     private void removeDead() {
         worldMap.getAnimalsFlat()
                 .stream()
@@ -57,15 +93,20 @@ public class Simulation implements Runnable {
     }
 
     private void move() {
-        worldMap.getAnimalsFlat().forEach(worldMap::move);
+        worldMap.getAnimalsFlat().forEach(animal -> {
+            worldMap.move(animal);
+            animal.loseEnergy(config.energyLossPreDay());
+        });
     }
 
-    protected void consume() {
-        worldMap.getAnimalsGroupedNSorted().forEach(cell -> {
-            if (worldMap.tryConsumePlant(cell.first())) {
-                cell.second().getFirst().consume();
-            }
-        });
+    protected void singleConsume(Pair<Vector2d, List<Animal>> cell) {
+        if (worldMap.tryConsumePlant(cell.first())) {
+            cell.second().getFirst().increaseEnergy(config.plantEnergy());
+        }
+    }
+
+    private void consume() {
+        worldMap.getAnimalsGroupedNSorted().forEach(this::singleConsume);
     }
 
     private void reproduce() {
@@ -73,17 +114,16 @@ public class Simulation implements Runnable {
         worldMap.getAnimalsGroupedNSorted().forEach(cell -> {
             final var animals = cell.second();
             for (int i = 1; i < animals.size(); i += 2) {
-                final var animal1 = animals.get(i - 1);
-                final var animal2 = animals.get(i);
-                final var child = animal1.tryReproduce(animal2);
-                if (child == null) break;
-                newborns.add(child);
+                final var child = reproducer.tryReproduce(animals.get(i - 1), animals.get(i), day);
+                if (child.isEmpty())
+                    break;
+                newborns.add(child.get());
             }
         });
         newborns.forEach(worldMap::place);
     }
 
-    private void processPlants() {
-        worldMap.processPlants();
+    private void growPlants() {
+        worldMap.growPlants(config.plantsPerDay());
     }
 }
