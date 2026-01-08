@@ -1,18 +1,14 @@
 package agh.ics.oop.model;
 
-public class Plant implements WorldElement {
-    private final Vector2d position;
+import java.util.HashSet;
 
+public class Plant extends WorldElement {
     public Plant(Vector2d position) {
-        this.position = position;
-    }
-
-    public Vector2d getPosition() {
-        return position;
+        super(position, new HashSet<>());
     }
 
     @Override
-    public String toString() {
+    public String toDisplay() {
         return "*";
     }
 }

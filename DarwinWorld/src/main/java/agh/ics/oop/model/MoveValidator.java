@@ -11,5 +11,5 @@ public interface MoveValidator {
      * @param orientation The orientation checked for the movement validity.
      * @return A pair of world position and world orientation.
      */
-    Pair<Vector2d, MapDirection> toWorld(Vector2d position, MapDirection orientation);
+    Pair<Vector2d, MapDirection> computePosition(Vector2d position, MapDirection orientation);
 }

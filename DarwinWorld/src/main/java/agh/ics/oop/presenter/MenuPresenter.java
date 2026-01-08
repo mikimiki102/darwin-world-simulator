@@ -6,7 +6,7 @@ import agh.ics.oop.SimulationEngine;
 import agh.ics.oop.model.GrassField;
 import agh.ics.oop.model.MoveDirection;
 import agh.ics.oop.model.Vector2d;
-import agh.ics.oop.model.WorldMap;
+import agh.ics.oop.model.BasicWorldMap;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -35,7 +35,7 @@ public class MenuPresenter {
             simulationStage.setScene(new Scene(root));
             simulationStage.show();
 
-            final var map = new WorldMap(5);
+            final var map = new BasicWorldMap(5);
             simulationController.setWorldMap(map);
             final var positions = List.of(
                     new Vector2d(6, 7),

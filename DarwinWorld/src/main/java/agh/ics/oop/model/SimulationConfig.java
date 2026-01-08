@@ -18,7 +18,11 @@ public record SimulationConfig(
         int minMutations,
         int maxMutations,
         int plantEnergy,
-        int genomeLength
+        int genomeLength,
+
+        int fireChance,
+        int onFireDuration,
+        int fireEnergyLoss
 ) {
     Pair<Integer, Integer> parentsEnergyLoss() {
         int half = energyToChild / 2;

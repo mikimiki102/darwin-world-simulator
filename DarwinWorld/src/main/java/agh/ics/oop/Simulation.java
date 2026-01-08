@@ -8,11 +8,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class Simulation implements Runnable {
-    private final WorldMap worldMap;
+    private final BasicWorldMap worldMap;
     private final SimulationConfig config;
     private ScheduledExecutorService executor;
 
-    public Simulation(WorldMap worldMap, SimulationConfig config) {
+    public Simulation(BasicWorldMap worldMap, SimulationConfig config) {
         this.worldMap = worldMap;
         this.config = config;
     }
@@ -20,9 +20,10 @@ public class Simulation implements Runnable {
     @Override
     public void run() {
         removeDead();
+        move();
         consume();
         reproduce();
-        growPlants();
+        processPlants();
     }
 
     public void start() {
@@ -50,6 +51,7 @@ public class Simulation implements Runnable {
 
     private void removeDead() {
         worldMap.getAnimalsFlat()
+                .stream()
                 .filter(Animal::isDead)
                 .forEach(worldMap::remove);
     }
@@ -81,7 +83,7 @@ public class Simulation implements Runnable {
         newborns.forEach(worldMap::place);
     }
 
-    private void growPlants() {
-        worldMap.growPlants(config.plantsPerDay());
+    private void processPlants() {
+        worldMap.processPlants();
     }
 }

@@ -1,10 +1,8 @@
 package agh.ics.oop.model;
 
-import java.util.Comparator;
-import java.util.Random;
+import java.util.*;
 
-public class Animal {
-    private Vector2d position;
+public class Animal extends WorldElement {
     private int energy;
     private int age = 0;
     private int numOfChildren = 0;
@@ -13,14 +11,15 @@ public class Animal {
     private final SimulationConfig config;
 
     public Animal(Vector2d position, Genome genome, SimulationConfig config) {
-        this.position = position;
+        super(position, getDefaultEffects());
         this.genome = genome;
         this.config = config;
         energy = config.energyToChild();
+        addDefaultEffects();
     }
 
     @Override
-    public String toString() {
+    public String toDisplay() {
         return orientation.toString();
     }
 
@@ -31,15 +30,11 @@ public class Animal {
     public void move(MoveValidator validator) {
         orientation = orientation.rotate(genome.getNext());
         position = position.add(orientation.toUnitVector());
-        final var pair = validator.toWorld(position, orientation);
+        final var pair = validator.computePosition(position, orientation);
         position = pair.first();
         orientation = pair.second();
-        age += 1;
-        energy -= config.energyLossPreDay();
-    }
-
-    public Vector2d getPosition() {
-        return position;
+        effects.forEach(effect -> effect.apply(this, config));
+        effects.removeIf(AnimalEffect::isExpired);
     }
 
     public MapDirection getOrientation() {
@@ -58,8 +53,16 @@ public class Animal {
         return energy;
     }
 
+    public void addEnergy(int amount) {
+        energy += amount;
+    }
+
     public int getAge() {
         return age;
+    }
+
+    public void increaseAge(int amount) {
+        age += amount;
     }
 
     public int getNumOfChildren() {
@@ -98,5 +101,19 @@ public class Animal {
 
     public Genome getGenome() {
         return genome;
+    }
+
+    private static Set<AnimalEffect> getDefaultEffects() {
+        final var effects = new HashSet<AnimalEffect>();
+        effects.add(new DailyEnergyLossEffect());
+        effects.add(new DailyAgingEffect());
+        return effects
+    }
+
+    public void addEffect(AnimalEffect effect) {
+        if (effects.contains(effect)) {
+            effects.remove(effect);
+        }
+        effects.add(effect);
     }
 }

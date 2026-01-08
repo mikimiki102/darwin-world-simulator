@@ -16,13 +16,13 @@ public class SimulationPresenter implements MapChangeListener {
     private static final int CELL_SIZE = 40 + BORDER_WIDTH / 2;
     private static final int FONT_SIZE = CELL_SIZE / 2;
 
-    private WorldMap worldMap;
+    private BasicWorldMap worldMap;
     @FXML
     private Label moveInfoLabel;
     @FXML
     private Canvas canvas;
 
-    public void setWorldMap(WorldMap map) {
+    public void setWorldMap(BasicWorldMap map) {
         if (worldMap != null) worldMap.unregisterListener(this);
         worldMap = map;
         if (worldMap != null) worldMap.registerListener(this);
@@ -86,7 +86,7 @@ public class SimulationPresenter implements MapChangeListener {
 
     }
 
-    private static void drawElements(GraphicsContext context, WorldMap map) {
+    private static void drawElements(GraphicsContext context, BasicWorldMap map) {
         final var bounds = map.getCurrentBounds();
         for (final var e : map.getElements()) {
             final var worldPos = e.getPosition();
@@ -99,7 +99,7 @@ public class SimulationPresenter implements MapChangeListener {
         }
     }
 
-    private void drawMap(WorldMap map) {
+    private void drawMap(BasicWorldMap map) {
         final var context = canvas.getGraphicsContext2D();
         clearCanvas(context, canvas, map.getCurrentBounds());
         configureFont(context, FONT_SIZE, Color.BLACK);
@@ -108,7 +108,7 @@ public class SimulationPresenter implements MapChangeListener {
     }
 
     @Override
-    public void mapChanged(WorldMap map, String message) {
+    public void mapChanged(BasicWorldMap map, String message) {
         Platform.runLater(() -> {
             drawMap(map);
             moveInfoLabel.setText(message);
