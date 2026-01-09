@@ -1,7 +1,8 @@
-package agh.ics.oop;
+package agh.ics.oop.simulation;
 
 import agh.ics.oop.model.*;
 import agh.ics.oop.model.util.Pair;
+import agh.ics.oop.model.util.RandomPositionGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,10 +36,12 @@ public class Simulation implements Runnable {
     private ScheduledExecutorService executor;
     private int day = 0;
     private final Animal.Reproducer reproducer;
+    private final List<SimulationChangeListener> listeners = new ArrayList<>();
 
-    public Simulation(Simulation.Config config, WorldMap worldMap) {
+    public Simulation(Simulation.Config config) {
         this.config = config;
-        this.worldMap = worldMap;
+        this.worldMap = new WorldMap(config.width(), config.height());
+        populate();
         worldMap.growPlants(config.plantsPerDay());
         reproducer = new Animal.Reproducer(
                 config.energyToReproduce(),
@@ -56,11 +59,13 @@ public class Simulation implements Runnable {
         consume();
         reproduce();
         growPlants();
+        notifyListeners();
     }
 
     public void start() {
         if (isRunning())
             throw new IllegalStateException("Cannot start already started Simulation");
+        notifyListeners();
         executor = Executors.newSingleThreadScheduledExecutor();
         executor.scheduleWithFixedDelay(this, 1, 1, TimeUnit.SECONDS);
     }
@@ -125,5 +130,17 @@ public class Simulation implements Runnable {
 
     private void growPlants() {
         worldMap.growPlants(config.plantsPerDay());
+    }
+
+    public WorldMap getMap() {
+        return worldMap;
+    }
+
+    public void addListener(SimulationChangeListener listener) {
+        listeners.add(listener);
+    }
+
+    private void notifyListeners() {
+        listeners.forEach(l -> l.onSimulationChanged(this));
     }
 }

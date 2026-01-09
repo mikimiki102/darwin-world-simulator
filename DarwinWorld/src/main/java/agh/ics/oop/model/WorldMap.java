@@ -1,10 +1,12 @@
 package agh.ics.oop.model;
 
 import agh.ics.oop.model.util.Pair;
+import agh.ics.oop.model.util.RandomSet;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class WorldMap implements MoveValidator {
     protected final int width;
@@ -98,6 +100,13 @@ public class WorldMap implements MoveValidator {
                 ).toList();
     }
 
+    public List<WorldElement> getWorldElements() {
+        return Stream.concat(
+                animals.values().stream().flatMap(Set::stream),
+                plantMap.values().stream())
+                .toList();
+    }
+
     private void fillEmptyPlantFields() {
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < jungleMinY; y++) {
@@ -150,5 +159,21 @@ public class WorldMap implements MoveValidator {
             }
         }
         return wasConsumed;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public boolean isAnimalAt(Vector2d position) {
+        return animals.containsKey(position) && !animals.get(position).isEmpty();
+    }
+
+    public Collection<Plant> getPlants() {
+        return plantMap.values();
     }
 }

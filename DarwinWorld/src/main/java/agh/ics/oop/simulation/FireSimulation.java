@@ -1,6 +1,7 @@
-package agh.ics.oop.model;
+package agh.ics.oop.simulation;
 
-import agh.ics.oop.Simulation;
+import agh.ics.oop.model.Animal;
+import agh.ics.oop.model.Vector2d;
 import agh.ics.oop.model.util.Pair;
 
 import java.util.List;
@@ -16,8 +17,8 @@ public class FireSimulation extends Simulation {
 
     private final FireSimulation.Config config;
 
-    public FireSimulation(FireSimulation.Config config, WorldMap worldMap) {
-        super(config.basicConfig(), worldMap);
+    public FireSimulation(FireSimulation.Config config) {
+        super(config.basicConfig());
         this.config = config;
     }
 

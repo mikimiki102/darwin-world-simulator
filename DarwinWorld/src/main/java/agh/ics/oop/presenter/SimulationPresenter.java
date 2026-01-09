@@ -1,6 +1,8 @@
 package agh.ics.oop.presenter;
 
+import agh.ics.oop.simulation.Simulation;
 import agh.ics.oop.model.*;
+import agh.ics.oop.simulation.SimulationChangeListener;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.VPos;
@@ -11,26 +13,20 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 
-public class SimulationPresenter implements MapChangeListener {
+public class SimulationPresenter implements SimulationChangeListener {
     private static final int BORDER_WIDTH = 3;
     private static final int CELL_SIZE = 40 + BORDER_WIDTH / 2;
     private static final int FONT_SIZE = CELL_SIZE / 2;
 
-    private WorldMap worldMap;
+    private Simulation simulation;
     @FXML
     private Label moveInfoLabel;
     @FXML
     private Canvas canvas;
 
-    public void setWorldMap(WorldMap map) {
-        if (worldMap != null) worldMap.unregisterListener(this);
-        worldMap = map;
-        if (worldMap != null) worldMap.registerListener(this);
-    }
-
-    private static void clearCanvas(GraphicsContext context, Canvas canvas, Boundary bounds) {
-        canvas.setWidth((bounds.width() + 1) * CELL_SIZE);
-        canvas.setHeight((bounds.height() + 1) * CELL_SIZE);
+    private static void clearCanvas(GraphicsContext context, Canvas canvas, int width, int height) {
+        canvas.setWidth((width + 1) * CELL_SIZE);
+        canvas.setHeight((height + 1) * CELL_SIZE);
         context.setFill(Color.WHITE);
         context.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
     }
@@ -57,61 +53,73 @@ public class SimulationPresenter implements MapChangeListener {
         drawOnGrid(context, Integer.toString(num), x, y);
     }
 
-    private static void drawOnGrid(GraphicsContext context, WorldElement element, Vector2d gridPosition) {
-        drawOnGrid(context, element.toString(), gridPosition.x(), gridPosition.y());
+    private static void drawOnGrid(GraphicsContext context, WorldElement element) {
+        final var position = element.getPosition();
+        drawOnGrid(context, element.toString(), position.x(), position.y());
     }
 
-    private static void drawGrid(GraphicsContext context, Boundary bounds) {
+    private static void drawGrid(GraphicsContext context, int width, int height) {
         context.setStroke(Color.BLACK);
         context.setLineWidth(BORDER_WIDTH);
 
-        context.strokeLine(0, 0, 0, (bounds.height() + 1) * CELL_SIZE);
-        context.strokeLine(0, 0, (bounds.width() + 1) * CELL_SIZE, 0);
+        context.strokeLine(0, 0, 0, (height + 1) * CELL_SIZE);
+        context.strokeLine(0, 0, (width + 1) * CELL_SIZE, 0);
         drawOnGrid(context, "y\\x", -1, -1);
-
-        final var width = bounds.width();
-        final var height = bounds.height();
 
         for (int x = 0; x < width; x++) {
             context.strokeLine((x + 1) * CELL_SIZE, 0, (x + 1) * CELL_SIZE, (height + 1) * CELL_SIZE);
-            drawOnGrid(context, bounds.lowerLeft().x() + x, x, -1);
+            drawOnGrid(context, x, x, -1);
         }
         context.strokeLine((width + 1) * CELL_SIZE, 0, (width + 1) * CELL_SIZE, (height + 1) * CELL_SIZE);
 
-        for (int y = 0; y < bounds.height(); y++) {
-            context.strokeLine(0, (y + 1) * CELL_SIZE, (bounds.width() + 1) * CELL_SIZE, (y + 1) * CELL_SIZE);
-            drawOnGrid(context, bounds.upperRight().y() - y, -1, y);
+        for (int y = 0; y < height; y++) {
+            context.strokeLine(0, (y + 1) * CELL_SIZE, (width + 1) * CELL_SIZE, (y + 1) * CELL_SIZE);
+            drawOnGrid(context, height - 1 - y, -1, y);
         }
         context.strokeLine(0, (height + 1) * CELL_SIZE, (width + 1) * CELL_SIZE, (height + 1) * CELL_SIZE);
 
     }
 
     private static void drawElements(GraphicsContext context, WorldMap map) {
-        final var bounds = map.getCurrentBounds();
-        for (final var e : map.getElements()) {
-            final var worldPos = e.getPosition();
-
-            // Draw only elements at the "top" (not grass if animal is also present)
-            if (e.equals(map.objectAt(worldPos))) {
-                final var gridPos = worldPos.toGridPosition(bounds);
-                drawOnGrid(context, e, gridPos);
+        map.getAnimalsGroupedNSorted().forEach(cell -> {
+            final var position = cell.first();
+            final int numOfAnimals = cell.second().size();
+            if (numOfAnimals > 1) {
+                drawOnGrid(context, numOfAnimals, position.x(), position.y());
+            } else {
+                drawOnGrid(context, cell.second().getFirst());
             }
-        }
+        });
+        map.getPlants().forEach(plant -> {
+            if (!map.isAnimalAt(plant.getPosition())) {
+                drawOnGrid(context, plant);
+            }
+        });
     }
 
     private void drawMap(WorldMap map) {
         final var context = canvas.getGraphicsContext2D();
-        clearCanvas(context, canvas, map.getCurrentBounds());
+        final int width = map.getWidth();
+        final int height = map.getHeight();
+        clearCanvas(context, canvas, width, height);
         configureFont(context, FONT_SIZE, Color.BLACK);
-        drawGrid(context, map.getCurrentBounds());
+        drawGrid(context, width, height);
         drawElements(context, map);
     }
 
     @Override
-    public void mapChanged(WorldMap map, String message) {
+    public void onSimulationChanged(Simulation simulation) {
         Platform.runLater(() -> {
-            drawMap(map);
-            moveInfoLabel.setText(message);
+            drawMap(simulation.getMap());
         });
+    }
+
+    public void startSimulation(Simulation sim) {
+        sim.addListener(this);
+        sim.start();
+    }
+
+    public void stopSimulation(Simulation sim) {
+        sim.stop();
     }
 }
