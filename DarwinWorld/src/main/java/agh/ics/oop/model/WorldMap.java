@@ -161,6 +161,10 @@ public class WorldMap implements MoveValidator {
         return wasConsumed;
     }
 
+    public boolean hasPlantAt(Vector2d position) {
+        return plantMap.containsKey(position);
+    }
+
     public int getWidth() {
         return width;
     }

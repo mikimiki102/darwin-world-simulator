@@ -3,9 +3,11 @@ package agh.ics.oop.model;
 import agh.ics.oop.model.util.Pair;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
+
 
 public class Genome {
     private final Optional<Pair<Animal, Animal>> parents;
@@ -75,6 +77,9 @@ public class Genome {
         return gen;
     }
 
+    public int[] toArray() {
+        return Arrays.copyOf(genes, genes.length);
+    }
     public Optional<Pair<Animal, Animal>> getParents() {
         return parents;
     }
