@@ -6,12 +6,15 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Animal implements WorldElement {
+    private static int NEXT_ID = 1;
+    private final int id;
+
     private Vector2d position;
     private MapDirection orientation = MapDirection.NORTH;
     private final Genome genome;
     private int energy;
     private int birthday;
-    private List<Animal> children = new ArrayList<>();
+    private final List<Animal> children = new ArrayList<>();
 
     public static class Reproducer {
         private final int neededEnergy;
@@ -35,16 +38,21 @@ public class Animal implements WorldElement {
             final var child = new Animal(animal1.getPosition(), childGenome, energyToChild, day);
             animal1.loseEnergy(parentEnergyLoss.first());
             animal2.loseEnergy(parentEnergyLoss.second());
+            animal1.addChild(child);
+            animal2.addChild(child);
             return Optional.of(child);
         }
     }
 
     public Animal(Vector2d position, Genome genome, int energy, int birthday) {
+        this.id = NEXT_ID++;
         this.position = position;
         this.genome = genome;
         this.energy = energy;
         this.birthday = birthday;
     }
+
+    public int getId() { return id; }
 
     @Override
     public Vector2d getPosition() {
@@ -74,10 +82,10 @@ public class Animal implements WorldElement {
 
     public static Comparator<Animal> getComparator() {
         return Comparator
-                .comparing(Animal::getEnergy).reversed()
-                .thenComparing(Animal::getBirthday)
-                .thenComparing(Animal::getNumberOfChildern).reversed()
-                .thenComparing(Animal::getRandom);
+                .comparingInt(Animal::getEnergy).reversed()
+                .thenComparingInt(Animal::getBirthday)
+                .thenComparingInt(Animal::getChildrenCount).reversed()
+                .thenComparingInt(Animal::getId);
     }
 
     public int getEnergy() {
@@ -110,5 +118,17 @@ public class Animal implements WorldElement {
 
     public Genome getGenome() {
         return genome;
+    }
+
+    public int getBirthDay() {
+        return getBirthday();
+    }
+
+    public int getChildrenCount() {
+        return children.size();
+    }
+
+    public void addChild(Animal child) {
+        children.add(child);
     }
 }

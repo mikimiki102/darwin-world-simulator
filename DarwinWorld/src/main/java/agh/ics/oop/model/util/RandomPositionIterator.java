@@ -1,44 +1,36 @@
 package agh.ics.oop.model.util;
 
 import agh.ics.oop.model.Vector2d;
-
-import java.util.*;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Random;
 
 public class RandomPositionIterator implements Iterator<Vector2d> {
     private final int count;
-    private final int bound;
-    private final int total;
+    private final int width;
+    private final int height;
     private final Random random;
-    private final Set<Integer> used;
-    private int i = 0;
+    private int produced = 0;
 
-    public RandomPositionIterator(int count, int bound, Random random) {
-        this.count = count;
-        this.bound = bound;
-        this.total = bound * bound;
-        this.random = random;
-        this.used = new HashSet<>(count * 2);
+    public RandomPositionIterator(int count, int width, int height, Random random) {
+        if (width <= 0 || height <= 0) throw new IllegalArgumentException("width/height <= 0");
+        this.count = Math.max(0, count);
+        this.width = width;
+        this.height = height;
+        this.random = (random == null) ? new Random(0) : random;
     }
 
     @Override
     public boolean hasNext() {
-        return i < count;
+        return produced < count;
     }
 
     @Override
     public Vector2d next() {
-        if (!hasNext()) {
-            throw new NoSuchElementException();
-        }
-
-        int t = random.nextInt(count, total + 1);
-        int idx = t;
-        if (!used.add(t)) {
-            idx = i;
-        }
-        i++;
-        int x = idx % bound;
-        int y = idx / bound;
+        if (!hasNext()) throw new NoSuchElementException();
+        produced++;
+        int x = random.nextInt(width);
+        int y = random.nextInt(height);
         return new Vector2d(x, y);
     }
 }

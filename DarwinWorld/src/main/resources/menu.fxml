@@ -61,8 +61,8 @@
 
     <CheckBox fx:id="fireEnabledCheckbox" text="Włącz pożary"/>
 
-    <GridPane hgap="10" vgap="5" fx:id="fireOptionsPane" disable="${!fireEnabledCheckbox.selected}">
-        <Label text="Szansa na pożar (%):" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+    <GridPane hgap="10" vgap="5" fx:id="fireOptionsPane" disable="true">
+    <Label text="Szansa na pożar (%):" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
         <TextField fx:id="fireChanceField" text="5" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
         <Label text="Czas trwania ognia:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>

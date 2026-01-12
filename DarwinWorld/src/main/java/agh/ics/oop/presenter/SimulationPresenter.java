@@ -43,7 +43,6 @@ public class SimulationPresenter implements SimulationChangeListener {
             System.err.println("Cannot draw outside the grid. x = " + x + ", y = " + y);
             return;
         }
-        // grid is offset by -1 (-1 is for axis)
         x += 1;
         y += 1;
         context.fillText(text, x * CELL_SIZE + CELL_SIZE / 2, y * CELL_SIZE + CELL_SIZE / 2);
@@ -115,7 +114,10 @@ public class SimulationPresenter implements SimulationChangeListener {
     }
 
     public void startSimulation(Simulation sim) {
+        this.simulation = sim;
         sim.addListener(this);
+
+        sim.init();
         sim.start();
     }
 
