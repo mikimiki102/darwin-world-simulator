@@ -1,25 +1,24 @@
 package agh.ics.oop.simulation;
 
-import agh.ics.oop.model.*;
+import agh.ics.oop.model.Animal;
+import agh.ics.oop.model.MapDirection;
+import agh.ics.oop.model.PlantOnFire;
+import agh.ics.oop.model.Vector2d;
 import agh.ics.oop.model.util.Pair;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class FireSimulation extends Simulation {
-    public record Config(
-            Simulation.Config basicConfig,
-            int fireChance,
-            int onFireDuration,
-            int fireEnergyLoss
-    ) {}
-
-    private final FireSimulation.Config config;
+    private final FireSimulationConfig config;
 
     private final Map<Vector2d, Integer> burningPlants = new HashMap<>();
     private final Map<Animal, Integer> burningAnimals = new HashMap<>();
 
-    public FireSimulation(FireSimulation.Config config) {
+    public FireSimulation(FireSimulationConfig config) {
         super(config.basicConfig());
         this.config = config;
     }
@@ -38,7 +37,7 @@ public class FireSimulation extends Simulation {
         if (!animals.isEmpty()
                 && worldMap.hasPlantAt(pos)
                 && ThreadLocalRandom.current().nextInt(100) < config.fireChance()) {
-            ignitePlant(pos, config.onFireDuration());
+            ignitePlant(pos, config.fireDuration());
             log("FIRE IGNITE at " + pos + " (by id=" + animals.get(0).getId() + ")");
         } else {
             super.singleConsume(cell);
@@ -60,7 +59,7 @@ public class FireSimulation extends Simulation {
     private void effectBurningAnimals() {
         worldMap.getAnimalsFlat().forEach(animal -> {
             if (burningPlants.containsKey(animal.getPosition())) {
-                burningAnimals.merge(animal, config.onFireDuration(), Math::max);
+                burningAnimals.merge(animal, config.fireDuration(), Math::max);
                 log("FIRE ANIMAL IGNITE id=" + animal.getId() + " at " + animal.getPosition());
             }
         });
@@ -74,7 +73,7 @@ public class FireSimulation extends Simulation {
                 return true;
             } else {
                 entry.setValue(fireLeft);
-                return  false;
+                return false;
             }
         });
     }
@@ -95,10 +94,14 @@ public class FireSimulation extends Simulation {
     }
 
     private void spreadFire() {
-        for (final var position : burningPlants.keySet()) {
+        if (burningPlants.isEmpty()) return;
+
+        final var burningPositions = new ArrayList<>(burningPlants.keySet());
+
+        for (final var position : burningPositions) {
             for (final var cellPosition : neighborCells(position)) {
                 if (worldMap.hasPlantAt(cellPosition)) {
-                    ignitePlant(cellPosition, config.onFireDuration());
+                    ignitePlant(cellPosition, config.fireDuration());
                     log("FIRE SPREAD to " + cellPosition);
                 }
             }
@@ -115,6 +118,11 @@ public class FireSimulation extends Simulation {
         return res;
     }
 
-    public int getBurningPlantsCount() { return burningPlants.size(); }
-    public int getBurningAnimalsCount() { return burningAnimals.size(); }
+    public int getBurningPlantsCount() {
+        return burningPlants.size();
+    }
+
+    public int getBurningAnimalsCount() {
+        return burningAnimals.size();
+    }
 }

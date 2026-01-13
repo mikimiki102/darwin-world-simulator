@@ -3,32 +3,15 @@ package agh.ics.oop.stats;
 import agh.ics.oop.model.Animal;
 import agh.ics.oop.model.WorldMap;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public final class WorldStats {
 
-    public record Snapshot(
-            int day,
-            int animals,
-            int plants,
-            int freeFields,
-            List<int[]> mostPopularGenotypes,
-            double avgEnergyOfLiving,
-            double avgLifespanOfDead,
-            double avgChildrenOfLiving
-    ) {}
-
     private final int width;
     private final int height;
-
     private long deadCount = 0;
     private long deadLifespanSum = 0;
-
     private int day = 0;
     private int animals = 0;
     private int plants = 0;
@@ -36,7 +19,6 @@ public final class WorldStats {
     private double avgEnergyOfLiving = 0.0;
     private double avgChildrenOfLiving = 0.0;
     private List<int[]> mostPopularGenotypes = List.of();
-
     public WorldStats(int width, int height) {
         this.width = width;
         this.height = height;
@@ -87,5 +69,17 @@ public final class WorldStats {
         double avgLife = deadCount == 0 ? 0.0 : (double) deadLifespanSum / deadCount;
         return new Snapshot(day, animals, plants, freeFields, mostPopularGenotypes,
                 avgEnergyOfLiving, avgLife, avgChildrenOfLiving);
+    }
+
+    public record Snapshot(
+            int day,
+            int animals,
+            int plants,
+            int freeFields,
+            List<int[]> mostPopularGenotypes,
+            double avgEnergyOfLiving,
+            double avgLifespanOfDead,
+            double avgChildrenOfLiving
+    ) {
     }
 }

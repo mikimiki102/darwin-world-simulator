@@ -1,9 +1,6 @@
 package agh.ics.oop.presenter;
 
-import agh.ics.oop.simulation.ConsoleDebugListener;
-import agh.ics.oop.simulation.ConsoleStatsListener;
-import agh.ics.oop.simulation.FireSimulation;
-import agh.ics.oop.simulation.Simulation;
+import agh.ics.oop.simulation.*;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -15,57 +12,75 @@ import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 
 public class MenuPresenter {
-    @FXML private Label infoLabel;
+    @FXML
+    private Label infoLabel;
 
-    @FXML private TextField widthField;
-    @FXML private TextField heightField;
-    @FXML private TextField startPlantCountField;
-    @FXML private TextField plantsPerDayField;
-    @FXML private TextField startAnimalCountField;
-    @FXML private TextField startAnimalEnergyField;
-    @FXML private TextField energyToReproduceField;
-    @FXML private TextField energyLossPerDayField;
-    @FXML private TextField energyToChildField;
-    @FXML private TextField minMutationsField;
-    @FXML private TextField maxMutationsField;
-    @FXML private TextField plantEnergyField;
-    @FXML private TextField genomeLengthField;
+    @FXML
+    private TextField widthField;
+    @FXML
+    private TextField heightField;
+    @FXML
+    private TextField startPlantCountField;
+    @FXML
+    private TextField plantsPerDayField;
+    @FXML
+    private TextField startAnimalCountField;
+    @FXML
+    private TextField startAnimalEnergyField;
+    @FXML
+    private TextField energyToReproduceField;
+    @FXML
+    private TextField energyLossPerDayField;
+    @FXML
+    private TextField energyToChildField;
+    @FXML
+    private TextField minMutationsField;
+    @FXML
+    private TextField maxMutationsField;
+    @FXML
+    private TextField plantEnergyField;
+    @FXML
+    private TextField genomeLengthField;
 
-    @FXML private CheckBox fireEnabledCheckbox;
-    @FXML private GridPane fireOptionsPane;
-    @FXML private TextField fireChanceField;
-    @FXML private TextField fireDurationField;
-    @FXML private TextField fireLossField;
+    @FXML
+    private CheckBox fireEnabledCheckbox;
+    @FXML
+    private GridPane fireOptionsPane;
+    @FXML
+    private TextField fireChanceField;
+    @FXML
+    private TextField fireDurationField;
+    @FXML
+    private TextField fireLossField;
 
-    private int getInt(TextField field, int def) {
-        try { return Integer.parseInt(field.getText().trim()); }
-        catch (Exception e) { return def; }
-    }
+    private SimulationConfig createSimConfig() {
+        final var def = SimulationConfig.DEFAULT;
 
-    private Simulation.Config createSimConfig() {
-        return new Simulation.Config(
-                getInt(widthField, 50),
-                getInt(heightField, 30),
-                getInt(startPlantCountField, 120),
-                getInt(plantsPerDayField, 10),
-                getInt(startAnimalCountField, 20),
-                getInt(startAnimalEnergyField, 20),
-                getInt(energyToReproduceField, 30),
-                getInt(energyLossPerDayField, 1),
-                getInt(energyToChildField, 20),
-                getInt(minMutationsField, 0),
-                getInt(maxMutationsField, 0),
-                getInt(plantEnergyField, 10),
-                getInt(genomeLengthField, 8)
+        return new SimulationConfig(
+                InputParser.parseOrDefault(widthField, def.width()),
+                InputParser.parseOrDefault(heightField, def.height()),
+                InputParser.parseOrDefault(startPlantCountField, def.startPlantCount()),
+                InputParser.parseOrDefault(plantsPerDayField, def.plantsPerDay()),
+                InputParser.parseOrDefault(startAnimalCountField, def.startAnimalCount()),
+                InputParser.parseOrDefault(startAnimalEnergyField, def.startAnimalEnergy()),
+                InputParser.parseOrDefault(energyToReproduceField, def.energyToReproduce()),
+                InputParser.parseOrDefault(energyLossPerDayField, def.energyLossPreDay()),
+                InputParser.parseOrDefault(energyToChildField, def.energyToChild()),
+                InputParser.parseOrDefault(minMutationsField, def.minMutations()),
+                InputParser.parseOrDefault(maxMutationsField, def.maxMutations()),
+                InputParser.parseOrDefault(plantEnergyField, def.plantEnergy()),
+                InputParser.parseOrDefault(genomeLengthField, def.genomeLength())
         );
     }
 
-    private FireSimulation.Config createFireSimConfig() {
-        return new FireSimulation.Config(
+    private FireSimulationConfig createFireSimConfig() {
+        final var def = FireSimulationConfig.DEFAULT;
+
+        return new FireSimulationConfig(
                 createSimConfig(),
-                getInt(fireChanceField, 5),
-                getInt(fireDurationField, 3),
-                getInt(fireLossField, 2)
+                InputParser.parseOrDefault(fireChanceField, def.fireChance()),
+                InputParser.parseOrDefault(fireDurationField, def.fireDuration()),
+                InputParser.parseOrDefault(fireLossField, def.fireEnergyLoss())
         );
     }
 
@@ -79,8 +94,8 @@ public class MenuPresenter {
     @FXML
     private void initialize() {
         fireOptionsPane.setDisable(!fireEnabledCheckbox.isSelected());
-        fireEnabledCheckbox.selectedProperty().addListener((obs, oldV, enabled) ->
-                fireOptionsPane.setDisable(!enabled)
+        fireEnabledCheckbox.selectedProperty().addListener(
+                (obs, oldV, enabled) -> fireOptionsPane.setDisable(!enabled)
         );
     }
 

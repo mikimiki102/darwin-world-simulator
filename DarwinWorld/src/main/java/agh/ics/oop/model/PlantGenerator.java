@@ -21,8 +21,8 @@ public class PlantGenerator {
         jungleMaxY = jungleMinY + jungleHeight - 1;
 
         int mapArea = width * height;
-        freeJungleFields = new RandomSet<>((int)Math.max(1, mapArea * 0.4));
-        freeStepFields = new RandomSet<>((int)Math.max(1, mapArea * 1.6));
+        freeJungleFields = new RandomSet<>((int) Math.max(1, mapArea * 0.4));
+        freeStepFields = new RandomSet<>((int) Math.max(1, mapArea * 1.6));
         freeAll();
     }
 

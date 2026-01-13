@@ -37,7 +37,7 @@ class SimulationUnitStepsTest {
     }
 
     private static Simulation simCfg(int w, int h, int plantsPerDay, int energyLossPerDay) {
-        var cfg = new Simulation.Config(
+        var cfg = new SimulationConfig(
                 w, h,
                 0, plantsPerDay,
                 0, 0,
@@ -52,7 +52,7 @@ class SimulationUnitStepsTest {
 
     @Test
     void testInit() {
-        var cfg = new Simulation.Config(
+        var cfg = new SimulationConfig(
                 20, 10,
                 15, 0,
                 8, 20,

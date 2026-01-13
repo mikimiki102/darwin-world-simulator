@@ -1,14 +1,15 @@
 package agh.ics.oop.presenter;
 
+import agh.ics.oop.model.WorldElement;
+import agh.ics.oop.model.WorldMap;
 import agh.ics.oop.simulation.Simulation;
-import agh.ics.oop.model.*;
 import agh.ics.oop.simulation.SimulationChangeListener;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Label;
+import javafx.scene.control.Button;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
@@ -20,9 +21,9 @@ public class SimulationPresenter implements SimulationChangeListener {
 
     private Simulation simulation;
     @FXML
-    private Label moveInfoLabel;
-    @FXML
     private Canvas canvas;
+    @FXML
+    private Button pauseButton;
 
     private static void clearCanvas(GraphicsContext context, Canvas canvas, int width, int height) {
         canvas.setWidth((width + 1) * CELL_SIZE);
@@ -94,6 +95,17 @@ public class SimulationPresenter implements SimulationChangeListener {
                 drawOnGrid(context, plant);
             }
         });
+    }
+
+    @FXML
+    private void onPauseButtonClicked() {
+        if (simulation.isRunning()) {
+            simulation.stop();
+            pauseButton.setText("Wznów");
+        } else {
+            simulation.start();
+            pauseButton.setText("Wstrzymaj");
+        }
     }
 
     private void drawMap(WorldMap map) {

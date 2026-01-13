@@ -80,6 +80,7 @@ public class Genome {
     public int[] toArray() {
         return Arrays.copyOf(genes, genes.length);
     }
+
     public Optional<Pair<Animal, Animal>> getParents() {
         return parents;
     }

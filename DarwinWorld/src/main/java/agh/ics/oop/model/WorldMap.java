@@ -1,10 +1,8 @@
 package agh.ics.oop.model;
 
 import agh.ics.oop.model.util.Pair;
-import agh.ics.oop.model.util.RandomSet;
 
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -114,8 +112,8 @@ public class WorldMap implements MoveValidator {
 
     public List<WorldElement> getWorldElements() {
         return Stream.concat(
-                animals.values().stream().flatMap(Set::stream),
-                plantMap.values().stream())
+                        animals.values().stream().flatMap(Set::stream),
+                        plantMap.values().stream())
                 .toList();
     }
 

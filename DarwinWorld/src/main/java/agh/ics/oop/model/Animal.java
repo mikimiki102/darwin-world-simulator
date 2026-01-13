@@ -1,20 +1,19 @@
 package agh.ics.oop.model;
 
-import agh.ics.oop.model.util.Pair;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Animal implements WorldElement {
     private static int NEXT_ID = 1;
     private final int id;
-
+    private final Genome genome;
+    private final List<Animal> children = new ArrayList<>();
     private Vector2d position;
     private MapDirection orientation = MapDirection.NORTH;
-    private final Genome genome;
     private int energy;
-    private int birthday;
-    private final List<Animal> children = new ArrayList<>();
+    private final int birthday;
 
     public Animal(Vector2d position, Genome genome, int energy, int birthday) {
         this.id = NEXT_ID++;
@@ -24,7 +23,17 @@ public class Animal implements WorldElement {
         this.birthday = birthday;
     }
 
-    public int getId() { return id; }
+    public static Comparator<Animal> getComparator() {
+        return Comparator
+                .comparingInt(Animal::getEnergy).reversed()
+                .thenComparingInt(Animal::getBirthday)
+                .thenComparingInt(Animal::getChildrenCount).reversed()
+                .thenComparingInt(Animal::getRandom);
+    }
+
+    public int getId() {
+        return id;
+    }
 
     @Override
     public Vector2d getPosition() {
@@ -52,14 +61,6 @@ public class Animal implements WorldElement {
         return orientation;
     }
 
-    public static Comparator<Animal> getComparator() {
-        return Comparator
-                .comparingInt(Animal::getEnergy).reversed()
-                .thenComparingInt(Animal::getBirthday)
-                .thenComparingInt(Animal::getChildrenCount).reversed()
-                .thenComparingInt(Animal::getRandom);
-    }
-
     public int getEnergy() {
         return energy;
     }
@@ -71,7 +72,7 @@ public class Animal implements WorldElement {
     public int getBirthday() {
         return birthday;
     }
-    
+
     private int getRandom() {
         return ThreadLocalRandom.current().nextInt();
     }

@@ -13,42 +13,16 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 public class Simulation implements Runnable {
-
-    public record AnimalState(int id, Vector2d pos, MapDirection dir, int energy) {}
-
-    public record Config(
-            int width,
-            int height,
-            int startPlantCount,
-            int plantsPerDay,
-            int startAnimalCount,
-            int startAnimalEnergy,
-            int energyToReproduce,
-            int energyLossPreDay,
-            int energyToChild,
-            int minMutations,
-            int maxMutations,
-            int plantEnergy,
-            int genomeLength
-    ) { }
-
-    private final Simulation.Config config;
     protected final WorldMap worldMap;
-    private ScheduledExecutorService executor;
-    protected int day = 0;
+    private final SimulationConfig config;
     private final Reproducer reproducer;
     private final List<SimulationChangeListener> listeners = new ArrayList<>();
     private final WorldStats stats;
-
     private final List<String> eventLog = new ArrayList<>();
-    protected void log(String s) { eventLog.add(s); }
-    public List<String> drainEventLog() {
-        var copy = new ArrayList<>(eventLog);
-        eventLog.clear();
-        return copy;
-    }
+    private ScheduledExecutorService executor;
+    private int day = 0;
 
-    public Simulation(Simulation.Config config) {
+    public Simulation(SimulationConfig config) {
         this.config = config;
         this.worldMap = new WorldMap(config.width(), config.height());
         reproducer = new Reproducer(
@@ -58,6 +32,16 @@ public class Simulation implements Runnable {
                 config.maxMutations()
         );
         this.stats = new WorldStats(config.width(), config.height());
+    }
+
+    protected void log(String s) {
+        eventLog.add(s);
+    }
+
+    public List<String> drainEventLog() {
+        var copy = new ArrayList<>(eventLog);
+        eventLog.clear();
+        return copy;
     }
 
     @Override
@@ -84,13 +68,13 @@ public class Simulation implements Runnable {
         if (isRunning())
             throw new IllegalStateException("Cannot start already started Simulation");
         executor = Executors.newSingleThreadScheduledExecutor();
-        executor.scheduleWithFixedDelay(this, 1, 1, TimeUnit.SECONDS);
+        executor.scheduleWithFixedDelay(this, 100, 1000, TimeUnit.MILLISECONDS);
     }
 
     public void stop() {
         try {
             executor.shutdown();
-            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+            if (!executor.awaitTermination(1, TimeUnit.SECONDS)) {
                 executor.shutdownNow();
             }
         } catch (InterruptedException e) {
@@ -99,7 +83,7 @@ public class Simulation implements Runnable {
         }
     }
 
-    private boolean isRunning() {
+    public boolean isRunning() {
         return executor != null && !executor.isShutdown();
     }
 
@@ -204,9 +188,13 @@ public class Simulation implements Runnable {
         return new Animal(pos, genome, config.startAnimalEnergy(), day);
     }
 
-    public WorldMap getMap() { return worldMap; }
+    public WorldMap getMap() {
+        return worldMap;
+    }
 
-    public WorldStats.Snapshot snapshot() { return stats.snapshot(); }
+    public WorldStats.Snapshot snapshot() {
+        return stats.snapshot();
+    }
 
     public List<AnimalState> getAnimalsState() {
         return worldMap.getAnimalsFlat().stream()
@@ -214,7 +202,11 @@ public class Simulation implements Runnable {
                 .toList();
     }
 
-    public void addListener(SimulationChangeListener listener) { listeners.add(listener); }
+    public void addListener(SimulationChangeListener listener) {
+        listeners.add(listener);
+    }
 
-    protected void notifyListeners() { listeners.forEach(l -> l.onSimulationChanged(this)); }
+    protected void notifyListeners() {
+        listeners.forEach(l -> l.onSimulationChanged(this));
+    }
 }
