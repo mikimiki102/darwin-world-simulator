@@ -36,7 +36,7 @@ public class Simulation implements Runnable {
     protected final WorldMap worldMap;
     private ScheduledExecutorService executor;
     protected int day = 0;
-    private final Animal.Reproducer reproducer;
+    private final Reproducer reproducer;
     private final List<SimulationChangeListener> listeners = new ArrayList<>();
     private final WorldStats stats;
 
@@ -51,7 +51,7 @@ public class Simulation implements Runnable {
     public Simulation(Simulation.Config config) {
         this.config = config;
         this.worldMap = new WorldMap(config.width(), config.height());
-        reproducer = new Animal.Reproducer(
+        reproducer = new Reproducer(
                 config.energyToReproduce(),
                 config.energyToChild(),
                 config.minMutations(),

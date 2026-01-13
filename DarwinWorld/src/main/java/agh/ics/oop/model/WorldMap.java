@@ -9,28 +9,16 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class WorldMap implements MoveValidator {
-    protected final int width;
-    protected final int height;
-    protected final int jungleMinY;
-    protected final int jungleMaxY;
-    protected final Map<Vector2d, Set<Animal>> animals = new HashMap<>();
-    protected final Map<Vector2d, Plant> plantMap = new HashMap<>();
-    protected final RandomSet<Vector2d> emptyJungleFields;
-    protected final RandomSet<Vector2d> emptyStepFields;
+    private final int width;
+    private final int height;
+    private final Map<Vector2d, Set<Animal>> animals = new HashMap<>();
+    private final Map<Vector2d, Plant> plantMap = new HashMap<>();
+    private final PlantGenerator plantGenerator;
 
     public WorldMap(int width, int height) {
         this.width = width;
         this.height = height;
-
-        int jungleHeight = (int) Math.max(1, height * 0.2);
-        int middle = height / 2;
-        jungleMinY = middle - (jungleHeight / 2);
-        jungleMaxY = jungleMinY + jungleHeight - 1;
-
-        int mapArea = width * height;
-        emptyJungleFields  = new RandomSet<>((int)Math.max(1, mapArea * 0.4));
-        emptyStepFields = new RandomSet<>((int)Math.max(1, mapArea * 1.6));
-        fillEmptyPlantFields();
+        plantGenerator = new PlantGenerator(width, height);
     }
 
     @Override
@@ -91,6 +79,22 @@ public class WorldMap implements MoveValidator {
         return true;
     }
 
+    public boolean tryConsumePlant(Vector2d position) {
+        boolean wasConsumed = plantMap.remove(position) != null;
+        if (wasConsumed) {
+            plantGenerator.freePosition(position);
+        }
+        return wasConsumed;
+    }
+
+    public void growPlants(int count) {
+        count = Math.min(count, plantGenerator.getFreeCount());
+        for (int i = 0; i < count; i++) {
+            final var position = plantGenerator.getPosition();
+            plantMap.put(position, new Plant(position));
+        }
+    }
+
     public List<Animal> getAnimalsFlat() {
         return animals.values().stream().flatMap(Set::stream).toList();
     }
@@ -113,60 +117,6 @@ public class WorldMap implements MoveValidator {
                 animals.values().stream().flatMap(Set::stream),
                 plantMap.values().stream())
                 .toList();
-    }
-
-    private void fillEmptyPlantFields() {
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < jungleMinY; y++) {
-                emptyStepFields.add(new Vector2d(x, y));
-            }
-            for (int y = jungleMinY; y <= jungleMaxY; y++) {
-                emptyJungleFields.add(new Vector2d(x, y));
-            }
-            for (int y = jungleMaxY + 1; y < height; y++) {
-                emptyStepFields.add(new Vector2d(x, y));
-            }
-        }
-    }
-
-    private Vector2d getRandomPlantPosition() {
-        final var random = ThreadLocalRandom.current();
-        if (emptyJungleFields.isEmpty()) {
-            return emptyStepFields.removeRandom(random);
-        }
-        if (emptyStepFields.isEmpty()) {
-            return emptyJungleFields.removeRandom(random);
-        }
-
-        int diceRoll = random.nextInt(100);
-        if (diceRoll < 80) {
-            return emptyJungleFields.removeRandom(random);
-        }
-        return emptyStepFields.removeRandom(random);
-    }
-
-    public void growPlants(int count) {
-        final int availableCount = emptyJungleFields.size() + emptyStepFields.size();
-        for (int i = 0; i < Math.min(count, availableCount); i++) {
-            final var position = getRandomPlantPosition();
-            plantMap.put(position, new Plant(position));
-        }
-    }
-
-    private boolean isJungle(Vector2d position) {
-        return position.y() >= jungleMinY && position.y() <= jungleMaxY;
-    }
-
-    public boolean tryConsumePlant(Vector2d position) {
-        boolean wasConsumed = plantMap.remove(position) != null;
-        if (wasConsumed) {
-            if (isJungle(position)) {
-                emptyJungleFields.add(position);
-            } else {
-                emptyStepFields.add(position);
-            }
-        }
-        return wasConsumed;
     }
 
     public boolean hasPlantAt(Vector2d position) {

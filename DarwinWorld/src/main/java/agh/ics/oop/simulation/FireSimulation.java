@@ -1,9 +1,6 @@
 package agh.ics.oop.simulation;
 
-import agh.ics.oop.model.Animal;
-import agh.ics.oop.model.MapDirection;
-import agh.ics.oop.model.Plant;
-import agh.ics.oop.model.Vector2d;
+import agh.ics.oop.model.*;
 import agh.ics.oop.model.util.Pair;
 
 import java.util.*;
@@ -50,7 +47,7 @@ public class FireSimulation extends Simulation {
 
     private void ignitePlant(Vector2d position, int duration) {
         worldMap.tryConsumePlant(position);
-        worldMap.place(new Plant.OnFire(position));
+        worldMap.place(new PlantOnFire(position));
         burningPlants.putIfAbsent(position, duration);
     }
 
@@ -98,23 +95,17 @@ public class FireSimulation extends Simulation {
     }
 
     private void spreadFire() {
-        if (burningPlants.isEmpty()) return;
-
-        var newlyIgnited = new HashSet<Vector2d>();
-        for (var pos : burningPlants.keySet()) {
-            for (var nb : neighbors4(pos)) {
-                if (worldMap.hasPlantAt(nb)) {
-                    newlyIgnited.add(nb);
+        for (final var position : burningPlants.keySet()) {
+            for (final var cellPosition : neighborCells(position)) {
+                if (worldMap.hasPlantAt(cellPosition)) {
+                    ignitePlant(cellPosition, config.onFireDuration());
+                    log("FIRE SPREAD to " + cellPosition);
                 }
             }
         }
-        for (var nb : newlyIgnited) {
-            ignitePlant(nb, config.onFireDuration());
-            log("FIRE SPREAD to " + nb);
-        }
     }
 
-    private List<Vector2d> neighbors4(Vector2d pos) {
+    private List<Vector2d> neighborCells(Vector2d pos) {
         var res = new ArrayList<Vector2d>(4);
         for (var dir : List.of(MapDirection.NORTH, MapDirection.EAST, MapDirection.SOUTH, MapDirection.WEST)) {
             var next = pos.add(dir.toUnitVector());
