@@ -85,7 +85,7 @@ public class Animal implements WorldElement {
                 .comparingInt(Animal::getEnergy).reversed()
                 .thenComparingInt(Animal::getBirthday)
                 .thenComparingInt(Animal::getChildrenCount).reversed()
-                .thenComparingInt(Animal::getId);
+                .thenComparingInt(Animal::getRandom);
     }
 
     public int getEnergy() {
@@ -99,11 +99,7 @@ public class Animal implements WorldElement {
     public int getBirthday() {
         return birthday;
     }
-
-    private int getNumberOfChildern() {
-        return children.size();
-    }
-
+    
     private int getRandom() {
         return ThreadLocalRandom.current().nextInt();
     }

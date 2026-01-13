@@ -2,6 +2,7 @@ package agh.ics.oop.simulation;
 
 import agh.ics.oop.model.Animal;
 import agh.ics.oop.model.MapDirection;
+import agh.ics.oop.model.Plant;
 import agh.ics.oop.model.Vector2d;
 import agh.ics.oop.model.util.Pair;
 
@@ -29,8 +30,7 @@ public class FireSimulation extends Simulation {
     @Override
     public void run() {
         coreDay();
-        fireEndOfDayTick();
-        spreadFire();
+        fireTick();
         recomputeAndNotify();
     }
 
@@ -43,47 +43,58 @@ public class FireSimulation extends Simulation {
                 && ThreadLocalRandom.current().nextInt(100) < config.fireChance()) {
             ignitePlant(pos, config.onFireDuration());
             log("FIRE IGNITE at " + pos + " (by id=" + animals.get(0).getId() + ")");
-            return;
+        } else {
+            super.singleConsume(cell);
         }
-        super.singleConsume(cell);
     }
 
-    private void fireEndOfDayTick() {
-        var burningPositions = new HashSet<>(burningPlants.keySet());
-        for (var a : worldMap.getAnimalsFlat()) {
-            if (burningPositions.contains(a.getPosition())) {
-                burningAnimals.merge(a, config.onFireDuration(), Math::max);
-                log("FIRE ANIMAL IGNITE id=" + a.getId() + " at " + a.getPosition());
-            }
-        }
+    private void ignitePlant(Vector2d position, int duration) {
+        worldMap.tryConsumePlant(position);
+        worldMap.place(new Plant.OnFire(position));
+        burningPlants.putIfAbsent(position, duration);
+    }
 
-        var itA = burningAnimals.entrySet().iterator();
-        while (itA.hasNext()) {
-            var e = itA.next();
-            var a = e.getKey();
-            int left = e.getValue() - 1;
-            a.loseEnergy(config.fireEnergyLoss());
-            if (left <= 0 || a.isDead()) {
-                itA.remove();
-                log("FIRE ANIMAL OUT id=" + a.getId());
+    private void fireTick() {
+        effectBurningAnimals();
+        removeBurnedPlants();
+        spreadFire();
+    }
+
+    private void effectBurningAnimals() {
+        worldMap.getAnimalsFlat().forEach(animal -> {
+            if (burningPlants.containsKey(animal.getPosition())) {
+                burningAnimals.merge(animal, config.onFireDuration(), Math::max);
+                log("FIRE ANIMAL IGNITE id=" + animal.getId() + " at " + animal.getPosition());
+            }
+        });
+
+        burningAnimals.entrySet().removeIf(entry -> {
+            final var animal = entry.getKey();
+            final int fireLeft = entry.getValue() - 1;
+            animal.loseEnergy(config.fireEnergyLoss());
+            if (fireLeft <= 0 || animal.isDead()) {
+                log("FIRE ANIMAL OUT id=" + animal.getId());
+                return true;
             } else {
-                e.setValue(left);
+                entry.setValue(fireLeft);
+                return  false;
             }
-        }
+        });
+    }
 
-        var toRemove = new ArrayList<Vector2d>();
-        for (var entry : burningPlants.entrySet()) {
-            var pos = entry.getKey();
-            int daysLeft = entry.getValue() - 1;
+    private void removeBurnedPlants() {
+        burningPlants.entrySet().removeIf(entry -> {
+            final var position = entry.getKey();
+            final int daysLeft = entry.getValue() - 1;
             if (daysLeft <= 0) {
-                worldMap.tryConsumePlant(pos);
-                toRemove.add(pos);
-                log("FIRE BURNOUT at " + pos);
+                worldMap.tryConsumePlant(position);
+                log("FIRE BURNOUT at " + position);
+                return true;
             } else {
                 entry.setValue(daysLeft);
+                return false;
             }
-        }
-        toRemove.forEach(burningPlants::remove);
+        });
     }
 
     private void spreadFire() {
@@ -101,10 +112,6 @@ public class FireSimulation extends Simulation {
             ignitePlant(nb, config.onFireDuration());
             log("FIRE SPREAD to " + nb);
         }
-    }
-
-    private void ignitePlant(Vector2d pos, int duration) {
-        burningPlants.merge(pos, Math.max(1, duration), Math::max);
     }
 
     private List<Vector2d> neighbors4(Vector2d pos) {

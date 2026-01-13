@@ -1,14 +1,14 @@
 package agh.ics.oop.model;
 
 public enum MapDirection {
-    NORTH(new Vector2d(0, 1), "Północ", "N"),
-    NORTH_EAST(new Vector2d(1, 1), "Północny wschód", "NE"),
+    NORTH(new Vector2d(0, -1), "Północ", "N"),
+    NORTH_EAST(new Vector2d(1, -1), "Północny wschód", "NE"),
     EAST(new Vector2d(1, 0), "Wschód", "E"),
-    SOUTH_EAST(new Vector2d(1, -1), "Południowy wschód", "SE"),
-    SOUTH(new Vector2d(0, -1), "Południe", "S"),
-    SOUTH_WEST(new Vector2d(-1, -1), "Południowy zachód", "SW"),
+    SOUTH_EAST(new Vector2d(1, 1), "Południowy wschód", "SE"),
+    SOUTH(new Vector2d(0, 1), "Południe", "S"),
+    SOUTH_WEST(new Vector2d(-1, 1), "Południowy zachód", "SW"),
     WEST(new Vector2d(-1, 0), "Zachód", "W"),
-    NORTH_WEST(new Vector2d(-1, 1), "Północny zachód", "NW");
+    NORTH_WEST(new Vector2d(-1, -1), "Północny zachód", "NW");
 
     private final Vector2d unitVector;
     private final String fullName;

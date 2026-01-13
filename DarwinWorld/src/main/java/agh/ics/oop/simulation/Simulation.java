@@ -134,11 +134,12 @@ public class Simulation implements Runnable {
             var dirBefore = animal.getOrientation();
             worldMap.move(animal);
             animal.loseEnergy(config.energyLossPreDay());
+            var dirAfter = animal.getOrientation();
             var after = animal.getPosition();
             if (!before.equals(after)) {
                 log("MOVE  id=" + animal.getId() +
                         " " + before + " -> " + after +
-                        " dir=" + dirBefore +
+                        " dir=" + dirBefore + " -> " + dirAfter +
                         " energy: " + eBefore + " -> " + animal.getEnergy());
             } else {
                 log("STAY  id=" + animal.getId() +
@@ -149,17 +150,15 @@ public class Simulation implements Runnable {
     }
 
     protected void singleConsume(Pair<Vector2d, List<Animal>> cell) {
-        if (worldMap.tryConsumePlant(cell.first())) {
-            var animals = cell.second();
-            if (!animals.isEmpty()) {
-                var a = animals.get(0);
-                int before = a.getEnergy();
-                a.increaseEnergy(config.plantEnergy());
-                log("EAT   id=" + a.getId() +
-                        " at " + cell.first() +
-                        " +" + config.plantEnergy() +
-                        " energy: " + before + " -> " + a.getEnergy());
-            }
+        final var animals = cell.second();
+        if (!animals.isEmpty() && worldMap.tryConsumePlant(cell.first())) {
+            final var strongest = animals.get(0);
+            final int before = strongest.getEnergy();
+            strongest.increaseEnergy(config.plantEnergy());
+            log("EAT   id=" + strongest.getId() +
+                    " at " + cell.first() +
+                    " +" + config.plantEnergy() +
+                    " energy: " + before + " -> " + strongest.getEnergy());
         }
     }
 

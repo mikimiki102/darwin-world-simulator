@@ -83,6 +83,14 @@ public class WorldMap implements MoveValidator {
         return result;
     }
 
+    public boolean place(Plant plant) {
+        final var position = plant.getPosition();
+        if (plantMap.containsKey(position))
+            return false;
+        plantMap.put(position, plant);
+        return true;
+    }
+
     public List<Animal> getAnimalsFlat() {
         return animals.values().stream().flatMap(Set::stream).toList();
     }
@@ -113,7 +121,7 @@ public class WorldMap implements MoveValidator {
                 emptyStepFields.add(new Vector2d(x, y));
             }
             for (int y = jungleMinY; y <= jungleMaxY; y++) {
-                emptyStepFields.add(new Vector2d(x, y));
+                emptyJungleFields.add(new Vector2d(x, y));
             }
             for (int y = jungleMaxY + 1; y < height; y++) {
                 emptyStepFields.add(new Vector2d(x, y));

@@ -3,7 +3,6 @@ package agh.ics.oop.model;
 import agh.ics.oop.model.util.Pair;
 
 public interface MoveValidator {
-
     /**
      * Validates and calculates the new position in the world;
      *
