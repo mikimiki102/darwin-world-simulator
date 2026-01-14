@@ -11,7 +11,7 @@ public class WorldMap implements MoveValidator {
     private final int height;
     private final Map<Vector2d, Set<Animal>> animals = new HashMap<>();
     private final Map<Vector2d, Plant> plantMap = new HashMap<>();
-    private final PlantGenerator plantGenerator;
+    private PlantGenerator plantGenerator;
 
     public WorldMap(int width, int height) {
         this.width = width;
@@ -31,57 +31,45 @@ public class WorldMap implements MoveValidator {
 
     public void move(Animal animal) {
         final var position = animal.getPosition();
-        if (!animals.containsKey(position))
-            return;
+        if (!animals.containsKey(position)) return;
 
         final var cell = animals.get(position);
-        if (!cell.contains(animal))
-            return;
+        if (!cell.contains(animal)) return;
 
         animal.move(this);
-        if (position.equals(animal.getPosition()))
-            return;
+        if (position.equals(animal.getPosition())) return;
 
         cell.remove(animal);
-        if (cell.isEmpty()) {
-            animals.remove(position);
-        }
+        if (cell.isEmpty()) animals.remove(position);
         place(animal);
     }
 
     public boolean place(Animal animal) {
         final var position = animal.getPosition();
-        if (!animals.containsKey(position)) {
-            final var set = new HashSet<Animal>(4);
-            animals.put(position, set);
-        }
+        animals.computeIfAbsent(position, k -> new HashSet<>(4));
         return animals.get(position).add(animal);
-
     }
 
     public boolean remove(Animal animal) {
         final var position = animal.getPosition();
         final var cell = animals.get(position);
+        if (cell == null) return false;
         final var result = cell.remove(animal);
-        if (cell.isEmpty()) {
-            animals.remove(position);
-        }
+        if (cell.isEmpty()) animals.remove(position);
         return result;
     }
 
     public boolean place(Plant plant) {
         final var position = plant.getPosition();
-        if (plantMap.containsKey(position))
-            return false;
+        if (plantMap.containsKey(position)) return false;
         plantMap.put(position, plant);
+        plantGenerator.occupyPosition(position);
         return true;
     }
 
     public boolean tryConsumePlant(Vector2d position) {
         boolean wasConsumed = plantMap.remove(position) != null;
-        if (wasConsumed) {
-            plantGenerator.freePosition(position);
-        }
+        if (wasConsumed) plantGenerator.freePosition(position);
         return wasConsumed;
     }
 
@@ -98,16 +86,13 @@ public class WorldMap implements MoveValidator {
     }
 
     public List<Pair<Vector2d, List<Animal>>> getAnimalsGroupedNSorted() {
-        return animals
-                .entrySet()
-                .stream()
+        return animals.entrySet().stream()
                 .map(entry -> new Pair<>(
                         entry.getKey(),
-                        entry.getValue()
-                                .stream()
+                        entry.getValue().stream()
                                 .sorted(Animal.getComparator())
-                                .collect(Collectors.toUnmodifiableList()))
-                ).toList();
+                                .collect(Collectors.toUnmodifiableList())
+                )).toList();
     }
 
     public List<WorldElement> getWorldElements() {
@@ -135,5 +120,68 @@ public class WorldMap implements MoveValidator {
 
     public Collection<Plant> getPlants() {
         return plantMap.values();
+    }
+
+    public record Snapshot(int width, int height, List<AnimalSnap> animals, List<PlantSnap> plants) {
+        public static Snapshot from(WorldMap map) {
+            var a = map.getAnimalsFlat().stream().map(AnimalSnap::from).toList();
+            var p = map.plantMap.values().stream().map(PlantSnap::from).toList();
+            return new Snapshot(map.width, map.height, a, p);
+        }
+
+        public static WorldMap toWorldMap(Snapshot s) {
+            var m = new WorldMap(s.width, s.height);
+            m.animals.clear();
+            m.plantMap.clear();
+            m.plantGenerator = new PlantGenerator(s.width, s.height);
+
+            int maxId = 0;
+
+            for (var ps : s.plants) {
+                Plant pl = ps.onFire ? new PlantOnFire(ps.pos) : new Plant(ps.pos);
+                m.plantMap.put(ps.pos, pl);
+                m.plantGenerator.occupyPosition(ps.pos);
+            }
+
+            for (var as : s.animals) {
+                maxId = Math.max(maxId, as.id);
+                var g = new Genome(as.genes, as.genomeIndex);
+                var an = new Animal(as.id, as.pos, g, as.energy, as.birthday, as.orientation, as.childrenCount);
+                m.place(an);
+            }
+
+            Animal.ensureNextIdAtLeast(maxId + 1);
+            return m;
+        }
+    }
+
+    public record AnimalSnap(
+            int id,
+            Vector2d pos,
+            MapDirection orientation,
+            int energy,
+            int birthday,
+            int childrenCount,
+            int[] genes,
+            int genomeIndex
+    ) {
+        static AnimalSnap from(Animal a) {
+            return new AnimalSnap(
+                    a.getId(),
+                    a.getPosition(),
+                    a.getOrientation(),
+                    a.getEnergy(),
+                    a.getBirthday(),
+                    a.getChildrenCount(),
+                    a.getGenome().toArray(),
+                    a.getGenome().getCurrentIndex()
+            );
+        }
+    }
+
+    public record PlantSnap(Vector2d pos, boolean onFire) {
+        static PlantSnap from(Plant p) {
+            return new PlantSnap(p.getPosition(), p instanceof PlantOnFire);
+        }
     }
 }

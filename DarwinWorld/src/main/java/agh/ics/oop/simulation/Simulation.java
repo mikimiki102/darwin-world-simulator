@@ -7,25 +7,26 @@ import agh.ics.oop.stats.WorldStats;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class Simulation implements Runnable {
-    protected final WorldMap worldMap;
+    protected WorldMap worldMap;
     private final SimulationConfig config;
     private final Reproducer reproducer;
     private final List<SimulationChangeListener> listeners = new ArrayList<>();
-    private final WorldStats stats;
+    private WorldStats stats;
     private final List<String> eventLog = new ArrayList<>();
     private ScheduledExecutorService executor;
     private int day = 0;
 
+    private static final int HISTORY_LIMIT = 600;
+    private final ArrayList<State> history = new ArrayList<>();
+    private int historyIndex = -1;
+
     public Simulation(SimulationConfig config) {
         this.config = config;
         this.worldMap = new WorldMap(config.width(), config.height());
-        reproducer = new Reproducer(
+        this.reproducer = new Reproducer(
                 config.energyToReproduce(),
                 config.energyToChild(),
                 config.minMutations(),
@@ -48,6 +49,7 @@ public class Simulation implements Runnable {
     public void run() {
         coreDay();
         recomputeAndNotify();
+        pushHistory();
     }
 
     protected void coreDay() {
@@ -65,18 +67,16 @@ public class Simulation implements Runnable {
     }
 
     public void start() {
-        if (isRunning())
-            throw new IllegalStateException("Cannot start already started Simulation");
+        if (isRunning()) throw new IllegalStateException("Cannot start already started Simulation");
         executor = Executors.newSingleThreadScheduledExecutor();
         executor.scheduleWithFixedDelay(this, 100, 1000, TimeUnit.MILLISECONDS);
     }
 
     public void stop() {
+        if (executor == null) return;
         try {
             executor.shutdown();
-            if (!executor.awaitTermination(1, TimeUnit.SECONDS)) {
-                executor.shutdownNow();
-            }
+            if (!executor.awaitTermination(1, TimeUnit.SECONDS)) executor.shutdownNow();
         } catch (InterruptedException e) {
             executor.shutdownNow();
             Thread.currentThread().interrupt();
@@ -158,8 +158,7 @@ public class Simulation implements Runnable {
                 var p1 = animals.get(i - 1);
                 var p2 = animals.get(i);
                 final var child = reproducer.tryReproduce(p1, p2, day);
-                if (child.isEmpty())
-                    break;
+                if (child.isEmpty()) break;
                 var c = child.get();
                 newborns.add(c);
                 log("BORN  id=" + c.getId() +
@@ -181,6 +180,7 @@ public class Simulation implements Runnable {
         populate();
         stats.recompute(worldMap, day);
         notifyListeners();
+        pushHistory();
     }
 
     private Animal makeAnimal(Vector2d pos, java.util.Random rng) {
@@ -196,12 +196,6 @@ public class Simulation implements Runnable {
         return stats.snapshot();
     }
 
-    public List<AnimalState> getAnimalsState() {
-        return worldMap.getAnimalsFlat().stream()
-                .map(a -> new AnimalState(a.getId(), a.getPosition(), a.getOrientation(), a.getEnergy()))
-                .toList();
-    }
-
     public void addListener(SimulationChangeListener listener) {
         listeners.add(listener);
     }
@@ -209,4 +203,51 @@ public class Simulation implements Runnable {
     protected void notifyListeners() {
         listeners.forEach(l -> l.onSimulationChanged(this));
     }
+
+    private void pushHistory() {
+        var st = new State(
+                day,
+                stats.debugState(),
+                WorldMap.Snapshot.from(worldMap)
+        );
+
+        if (historyIndex < history.size() - 1) {
+            history.subList(historyIndex + 1, history.size()).clear();
+        }
+        history.add(st);
+        historyIndex = history.size() - 1;
+
+        if (history.size() > HISTORY_LIMIT) {
+            int drop = history.size() - HISTORY_LIMIT;
+            history.subList(0, drop).clear();
+            historyIndex -= drop;
+            if (historyIndex < 0) historyIndex = 0;
+        }
+    }
+
+    private void restore(State st) {
+        this.day = st.day;
+        this.worldMap = WorldMap.Snapshot.toWorldMap(st.map);
+        this.stats.restoreState(st.stats);
+        notifyListeners();
+    }
+
+    public void stepForward() {
+        if (historyIndex < history.size() - 1) {
+            historyIndex++;
+            restore(history.get(historyIndex));
+            return;
+        }
+        coreDay();
+        recomputeAndNotify();
+        pushHistory();
+    }
+
+    public void stepBack() {
+        if (historyIndex <= 0) return;
+        historyIndex--;
+        restore(history.get(historyIndex));
+    }
+
+    private record State(int day, WorldStats.DebugState stats, WorldMap.Snapshot map) {}
 }

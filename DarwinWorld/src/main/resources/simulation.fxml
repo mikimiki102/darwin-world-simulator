@@ -5,29 +5,88 @@
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
 <?import javafx.geometry.Insets?>
 
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
             fx:controller="agh.ics.oop.presenter.SimulationPresenter"
             minHeight="550.0" minWidth="850.0">
+
     <top>
         <HBox alignment="CENTER" spacing="10">
             <padding>
                 <Insets top="10" right="10" bottom="10" left="10"/>
             </padding>
-            <Button fx:id="pauseButton" text="Wstrzymaj" onAction="#onPauseButtonClicked" minWidth="80"/>
+            <Button fx:id="stepBackButton" text="&lt;&lt;" onAction="#onStepBackClicked" minWidth="60"/>
+            <Button fx:id="stepForwardButton" text="&gt;&gt;" onAction="#onStepForwardClicked" minWidth="60"/>
+            <Button fx:id="pauseButton" text="Wstrzymaj" onAction="#onPauseButtonClicked" minWidth="90"/>
         </HBox>
     </top>
+
     <center>
         <ScrollPane fitToHeight="true" fitToWidth="true">
             <content>
                 <StackPane>
-                    <Canvas fx:id="canvas" />
+                    <Canvas fx:id="canvas"/>
                 </StackPane>
             </content>
         </ScrollPane>
     </center>
+
     <bottom>
+        <VBox spacing="6">
+            <padding>
+                <Insets top="8" right="10" bottom="10" left="10"/>
+            </padding>
+
+            <HBox spacing="14" alignment="CENTER_LEFT">
+                <Label text="Dzień:"/>
+                <Label fx:id="dayLabel" text="-"/>
+                <Label text="Zwierzaki:"/>
+                <Label fx:id="animalsLabel" text="-"/>
+                <Label text="Rośliny:"/>
+                <Label fx:id="plantsLabel" text="-"/>
+                <Label text="Wolne pola:"/>
+                <Label fx:id="freeFieldsLabel" text="-"/>
+            </HBox>
+
+            <HBox spacing="14" alignment="CENTER_LEFT">
+                <Label text="Śr. energia (żywe):"/>
+                <Label fx:id="avgEnergyLabel" text="-"/>
+                <Label text="Śr. długość życia (martwe):"/>
+                <Label fx:id="avgLifeLabel" text="-"/>
+                <Label text="Śr. dzieci (żywe):"/>
+                <Label fx:id="avgKidsLabel" text="-"/>
+            </HBox>
+
+            <HBox spacing="14" alignment="CENTER_LEFT">
+                <Label text="Najpopularniejsze genotypy:"/>
+                <Label fx:id="popularGenotypesLabel" text="-"/>
+            </HBox>
+
+            <HBox spacing="14" alignment="CENTER_LEFT">
+                <Label text="Pożary:"/>
+                <Label fx:id="fireLabel" text="-"/>
+            </HBox>
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Wykres:"/>
+                <ComboBox fx:id="chartChoice" prefWidth="260"/>
+            </HBox>
+
+            <LineChart fx:id="statsChart" animated="false" createSymbols="false" prefHeight="180">
+                <xAxis>
+                    <NumberAxis fx:id="xAxis" label="Dzień"/>
+                </xAxis>
+                <yAxis>
+                    <NumberAxis fx:id="yAxis" label="Wartość"/>
+                </yAxis>
+            </LineChart>
+        </VBox>
     </bottom>
+
 </BorderPane>

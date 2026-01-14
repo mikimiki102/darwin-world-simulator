@@ -1,22 +1,16 @@
 package agh.ics.oop.simulation;
 
-import agh.ics.oop.model.Animal;
-import agh.ics.oop.model.MapDirection;
-import agh.ics.oop.model.PlantOnFire;
-import agh.ics.oop.model.Vector2d;
+import agh.ics.oop.model.*;
 import agh.ics.oop.model.util.Pair;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class FireSimulation extends Simulation {
     private final FireSimulationConfig config;
 
     private final Map<Vector2d, Integer> burningPlants = new HashMap<>();
-    private final Map<Animal, Integer> burningAnimals = new HashMap<>();
+    private final Map<Integer, Integer> burningAnimals = new HashMap<>();
 
     public FireSimulation(FireSimulationConfig config) {
         super(config.basicConfig());
@@ -25,9 +19,15 @@ public class FireSimulation extends Simulation {
 
     @Override
     public void run() {
+        stepForward();
+    }
+
+    @Override
+    public void stepForward() {
         coreDay();
         fireTick();
         recomputeAndNotify();
+        super.stepForward();
     }
 
     @Override
@@ -35,7 +35,7 @@ public class FireSimulation extends Simulation {
         var pos = cell.first();
         var animals = cell.second();
         if (!animals.isEmpty()
-                && worldMap.hasPlantAt(pos)
+                && getMap().hasPlantAt(pos)
                 && ThreadLocalRandom.current().nextInt(100) < config.fireChance()) {
             ignitePlant(pos, config.fireDuration());
             log("FIRE IGNITE at " + pos + " (by id=" + animals.get(0).getId() + ")");
@@ -45,8 +45,8 @@ public class FireSimulation extends Simulation {
     }
 
     private void ignitePlant(Vector2d position, int duration) {
-        worldMap.tryConsumePlant(position);
-        worldMap.place(new PlantOnFire(position));
+        getMap().tryConsumePlant(position);
+        getMap().place(new PlantOnFire(position));
         burningPlants.putIfAbsent(position, duration);
     }
 
@@ -57,25 +57,34 @@ public class FireSimulation extends Simulation {
     }
 
     private void effectBurningAnimals() {
-        worldMap.getAnimalsFlat().forEach(animal -> {
+        getMap().getAnimalsFlat().forEach(animal -> {
             if (burningPlants.containsKey(animal.getPosition())) {
-                burningAnimals.merge(animal, config.fireDuration(), Math::max);
+                burningAnimals.merge(animal.getId(), config.fireDuration(), Math::max);
                 log("FIRE ANIMAL IGNITE id=" + animal.getId() + " at " + animal.getPosition());
             }
         });
 
-        burningAnimals.entrySet().removeIf(entry -> {
-            final var animal = entry.getKey();
-            final int fireLeft = entry.getValue() - 1;
-            animal.loseEnergy(config.fireEnergyLoss());
-            if (fireLeft <= 0 || animal.isDead()) {
-                log("FIRE ANIMAL OUT id=" + animal.getId());
-                return true;
-            } else {
-                entry.setValue(fireLeft);
-                return false;
+        var it = burningAnimals.entrySet().iterator();
+        while (it.hasNext()) {
+            var entry = it.next();
+            int id = entry.getKey();
+            int left = entry.getValue() - 1;
+
+            var aOpt = getMap().getAnimalsFlat().stream().filter(a -> a.getId() == id).findFirst();
+            if (aOpt.isEmpty()) {
+                it.remove();
+                continue;
             }
-        });
+            var animal = aOpt.get();
+            animal.loseEnergy(config.fireEnergyLoss());
+
+            if (left <= 0 || animal.isDead()) {
+                log("FIRE ANIMAL OUT id=" + animal.getId());
+                it.remove();
+            } else {
+                entry.setValue(left);
+            }
+        }
     }
 
     private void removeBurnedPlants() {
@@ -83,7 +92,7 @@ public class FireSimulation extends Simulation {
             final var position = entry.getKey();
             final int daysLeft = entry.getValue() - 1;
             if (daysLeft <= 0) {
-                worldMap.tryConsumePlant(position);
+                getMap().tryConsumePlant(position);
                 log("FIRE BURNOUT at " + position);
                 return true;
             } else {
@@ -100,7 +109,7 @@ public class FireSimulation extends Simulation {
 
         for (final var position : burningPositions) {
             for (final var cellPosition : neighborCells(position)) {
-                if (worldMap.hasPlantAt(cellPosition)) {
+                if (getMap().hasPlantAt(cellPosition)) {
                     ignitePlant(cellPosition, config.fireDuration());
                     log("FIRE SPREAD to " + cellPosition);
                 }
@@ -112,7 +121,7 @@ public class FireSimulation extends Simulation {
         var res = new ArrayList<Vector2d>(4);
         for (var dir : List.of(MapDirection.NORTH, MapDirection.EAST, MapDirection.SOUTH, MapDirection.WEST)) {
             var next = pos.add(dir.toUnitVector());
-            var adjusted = worldMap.computePosition(next, dir).first();
+            var adjusted = getMap().computePosition(next, dir).first();
             res.add(adjusted);
         }
         return res;

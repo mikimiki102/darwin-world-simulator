@@ -8,20 +8,23 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
-
 public class Genome {
     private final Optional<Pair<Animal, Animal>> parents;
-    private final int[] genes;
+    final int[] genes;
     private int currentIndex;
 
     public Genome(int length) {
         parents = Optional.empty();
         genes = new int[length];
         final var random = ThreadLocalRandom.current();
-        for (int i = 0; i < length; i++) {
-            this.genes[i] = random.nextInt(MapDirection.values().length);
-        }
-        this.currentIndex = random.nextInt(length);
+        for (int i = 0; i < length; i++) genes[i] = random.nextInt(MapDirection.values().length);
+        currentIndex = random.nextInt(length);
+    }
+
+    public Genome(int[] genes, int currentIndex) {
+        this.parents = Optional.empty();
+        this.genes = Arrays.copyOf(genes, genes.length);
+        this.currentIndex = Math.floorMod(currentIndex, genes.length);
     }
 
     public Genome(Animal animal1, Animal animal2, int minMutations, int maxMutations) {
@@ -47,13 +50,11 @@ public class Genome {
         }
 
         applyMutations(minMutations, maxMutations);
-        this.currentIndex = random.nextInt(length);
+        currentIndex = random.nextInt(length);
     }
 
     private Pair<Animal, Animal> sortByStronger(Animal animal1, Animal animal2) {
-        if (animal1.getEnergy() >= animal2.getEnergy()) {
-            return new Pair<>(animal1, animal2);
-        }
+        if (animal1.getEnergy() >= animal2.getEnergy()) return new Pair<>(animal1, animal2);
         return new Pair<>(animal2, animal1);
     }
 
@@ -67,7 +68,7 @@ public class Genome {
 
         for (int i = 0; i < numberOfMutations; i++) {
             int idxToMutate = indices.get(i);
-            this.genes[idxToMutate] = random.nextInt(MapDirection.values().length);
+            genes[idxToMutate] = random.nextInt(MapDirection.values().length);
         }
     }
 
@@ -83,5 +84,9 @@ public class Genome {
 
     public Optional<Pair<Animal, Animal>> getParents() {
         return parents;
+    }
+
+    public int getCurrentIndex() {
+        return currentIndex;
     }
 }

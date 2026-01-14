@@ -7,7 +7,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public final class WorldStats {
-
     private final int width;
     private final int height;
     private long deadCount = 0;
@@ -19,6 +18,7 @@ public final class WorldStats {
     private double avgEnergyOfLiving = 0.0;
     private double avgChildrenOfLiving = 0.0;
     private List<int[]> mostPopularGenotypes = List.of();
+
     public WorldStats(int width, int height) {
         this.width = width;
         this.height = height;
@@ -80,6 +80,34 @@ public final class WorldStats {
             double avgEnergyOfLiving,
             double avgLifespanOfDead,
             double avgChildrenOfLiving
-    ) {
+    ) { }
+
+    public record DebugState(
+            long deadCount,
+            long deadLifespanSum,
+            int day,
+            int animals,
+            int plants,
+            int freeFields,
+            double avgEnergyOfLiving,
+            double avgChildrenOfLiving,
+            List<int[]> mostPopularGenotypes
+    ) { }
+
+    public DebugState debugState() {
+        return new DebugState(deadCount, deadLifespanSum, day, animals, plants, freeFields,
+                avgEnergyOfLiving, avgChildrenOfLiving, mostPopularGenotypes);
+    }
+
+    public void restoreState(DebugState s) {
+        this.deadCount = s.deadCount();
+        this.deadLifespanSum = s.deadLifespanSum();
+        this.day = s.day();
+        this.animals = s.animals();
+        this.plants = s.plants();
+        this.freeFields = s.freeFields();
+        this.avgEnergyOfLiving = s.avgEnergyOfLiving();
+        this.avgChildrenOfLiving = s.avgChildrenOfLiving();
+        this.mostPopularGenotypes = s.mostPopularGenotypes();
     }
 }

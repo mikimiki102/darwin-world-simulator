@@ -20,8 +20,7 @@ public class Reproducer {
     }
 
     public Optional<Animal> tryReproduce(Animal animal1, Animal animal2, int day) {
-        if (!animal1.canReproduce(neededEnergy) || !animal2.canReproduce(neededEnergy))
-            return Optional.empty();
+        if (!animal1.canReproduce(neededEnergy) || !animal2.canReproduce(neededEnergy)) return Optional.empty();
         final var childGenome = new Genome(animal1, animal2, minMutations, maxMutations);
         final var child = new Animal(animal1.getPosition(), childGenome, energyToChild, day);
         animal1.loseEnergy(parentEnergyLoss.first());

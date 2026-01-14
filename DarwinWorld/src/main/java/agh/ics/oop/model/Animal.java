@@ -1,26 +1,35 @@
 package agh.ics.oop.model;
 
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Animal implements WorldElement {
     private static int NEXT_ID = 1;
+
     private final int id;
     private final Genome genome;
-    private final List<Animal> children = new ArrayList<>();
+    private int childrenCount;
     private Vector2d position;
-    private MapDirection orientation = MapDirection.NORTH;
+    private MapDirection orientation;
     private int energy;
     private final int birthday;
 
     public Animal(Vector2d position, Genome genome, int energy, int birthday) {
-        this.id = NEXT_ID++;
+        this(NEXT_ID++, position, genome, energy, birthday, MapDirection.NORTH, 0);
+    }
+
+    public Animal(int id, Vector2d position, Genome genome, int energy, int birthday, MapDirection orientation, int childrenCount) {
+        this.id = id;
         this.position = position;
         this.genome = genome;
         this.energy = energy;
         this.birthday = birthday;
+        this.orientation = orientation;
+        this.childrenCount = childrenCount;
+    }
+
+    public static void ensureNextIdAtLeast(int value) {
+        if (NEXT_ID < value) NEXT_ID = value;
     }
 
     public static Comparator<Animal> getComparator() {
@@ -94,10 +103,10 @@ public class Animal implements WorldElement {
     }
 
     public int getChildrenCount() {
-        return children.size();
+        return childrenCount;
     }
 
     public void addChild(Animal child) {
-        children.add(child);
+        childrenCount++;
     }
 }

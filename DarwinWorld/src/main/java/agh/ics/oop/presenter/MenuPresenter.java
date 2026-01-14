@@ -12,50 +12,30 @@ import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 
 public class MenuPresenter {
-    @FXML
-    private Label infoLabel;
+    @FXML private Label infoLabel;
 
-    @FXML
-    private TextField widthField;
-    @FXML
-    private TextField heightField;
-    @FXML
-    private TextField startPlantCountField;
-    @FXML
-    private TextField plantsPerDayField;
-    @FXML
-    private TextField startAnimalCountField;
-    @FXML
-    private TextField startAnimalEnergyField;
-    @FXML
-    private TextField energyToReproduceField;
-    @FXML
-    private TextField energyLossPerDayField;
-    @FXML
-    private TextField energyToChildField;
-    @FXML
-    private TextField minMutationsField;
-    @FXML
-    private TextField maxMutationsField;
-    @FXML
-    private TextField plantEnergyField;
-    @FXML
-    private TextField genomeLengthField;
+    @FXML private TextField widthField;
+    @FXML private TextField heightField;
+    @FXML private TextField startPlantCountField;
+    @FXML private TextField plantsPerDayField;
+    @FXML private TextField startAnimalCountField;
+    @FXML private TextField startAnimalEnergyField;
+    @FXML private TextField energyToReproduceField;
+    @FXML private TextField energyLossPerDayField;
+    @FXML private TextField energyToChildField;
+    @FXML private TextField minMutationsField;
+    @FXML private TextField maxMutationsField;
+    @FXML private TextField plantEnergyField;
+    @FXML private TextField genomeLengthField;
 
-    @FXML
-    private CheckBox fireEnabledCheckbox;
-    @FXML
-    private GridPane fireOptionsPane;
-    @FXML
-    private TextField fireChanceField;
-    @FXML
-    private TextField fireDurationField;
-    @FXML
-    private TextField fireLossField;
+    @FXML private CheckBox fireEnabledCheckbox;
+    @FXML private GridPane fireOptionsPane;
+    @FXML private TextField fireChanceField;
+    @FXML private TextField fireDurationField;
+    @FXML private TextField fireLossField;
 
     private SimulationConfig createSimConfig() {
         final var def = SimulationConfig.DEFAULT;
-
         return new SimulationConfig(
                 InputParser.parseOrDefault(widthField, def.width()),
                 InputParser.parseOrDefault(heightField, def.height()),
@@ -75,7 +55,6 @@ public class MenuPresenter {
 
     private FireSimulationConfig createFireSimConfig() {
         final var def = FireSimulationConfig.DEFAULT;
-
         return new FireSimulationConfig(
                 createSimConfig(),
                 InputParser.parseOrDefault(fireChanceField, def.fireChance()),
@@ -85,29 +64,23 @@ public class MenuPresenter {
     }
 
     private Simulation createSimulation() {
-        if (fireEnabledCheckbox.isSelected()) {
-            return new FireSimulation(createFireSimConfig());
-        }
+        if (fireEnabledCheckbox.isSelected()) return new FireSimulation(createFireSimConfig());
         return new Simulation(createSimConfig());
     }
 
     @FXML
     private void initialize() {
         fireOptionsPane.setDisable(!fireEnabledCheckbox.isSelected());
-        fireEnabledCheckbox.selectedProperty().addListener(
-                (obs, oldV, enabled) -> fireOptionsPane.setDisable(!enabled)
-        );
+        fireEnabledCheckbox.selectedProperty().addListener((obs, oldV, enabled) -> fireOptionsPane.setDisable(!enabled));
     }
 
     public void onStartSimulation() {
         try {
             final var sim = createSimulation();
-
             sim.addListener(new ConsoleStatsListener());
             sim.addListener(new ConsoleDebugListener());
 
-            final var loader = new FXMLLoader();
-            loader.setLocation(getClass().getClassLoader().getResource("simulation.fxml"));
+            final var loader = new FXMLLoader(getClass().getClassLoader().getResource("simulation.fxml"));
             final Parent root = loader.load();
             final SimulationPresenter presenter = loader.getController();
 
@@ -119,7 +92,8 @@ public class MenuPresenter {
             stage.setOnCloseRequest(ev -> presenter.stopSimulation(sim));
             presenter.startSimulation(sim);
         } catch (Exception e) {
-            final var msg = "Start simulation not done: " + e;
+            e.printStackTrace();
+            final var msg = "Start simulation not done: " + e.getClass().getSimpleName() + ": " + e.getMessage();
             System.err.println(msg);
             infoLabel.setText(msg);
         }
