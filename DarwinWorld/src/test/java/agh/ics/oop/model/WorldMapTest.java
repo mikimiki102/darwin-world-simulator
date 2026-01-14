@@ -68,13 +68,13 @@ class WorldMapTest {
         var map = new WorldMap(W, H);
 
         var start = new Vector2d(3, 0);
-        var a = animalAt(start, 10, 0, MapDirection.SOUTH);
+        var a = animalAt(start, 10, 0, MapDirection.NORTH); // <- NORTH, bo y=-1 próbuje wyjść poza mapę
         map.place(a);
 
         map.move(a);
 
         assertEquals(start, a.getPosition(), "po odbiciu na biegunie pozycja powinna zostać bez zmiany");
-        assertEquals(MapDirection.NORTH, a.getOrientation(), "kierunek powinien się odwrócić");
+        assertEquals(MapDirection.SOUTH, a.getOrientation(), "kierunek powinien się odwrócić");
     }
 
     @Test

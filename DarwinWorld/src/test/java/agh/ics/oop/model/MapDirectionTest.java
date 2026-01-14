@@ -69,13 +69,13 @@ class MapDirectionTest {
 
     @Test
     void toUnitVector() {
-        assertEquals(new Vector2d(0, 1), MapDirection.NORTH.toUnitVector());
-        assertEquals(new Vector2d(1, 1), MapDirection.NORTH_EAST.toUnitVector());
+        assertEquals(new Vector2d(0, -1), MapDirection.NORTH.toUnitVector());
+        assertEquals(new Vector2d(1, -1), MapDirection.NORTH_EAST.toUnitVector());
         assertEquals(new Vector2d(1, 0), MapDirection.EAST.toUnitVector());
-        assertEquals(new Vector2d(1, -1), MapDirection.SOUTH_EAST.toUnitVector());
-        assertEquals(new Vector2d(0, -1), MapDirection.SOUTH.toUnitVector());
-        assertEquals(new Vector2d(-1, -1), MapDirection.SOUTH_WEST.toUnitVector());
+        assertEquals(new Vector2d(1, 1), MapDirection.SOUTH_EAST.toUnitVector());
+        assertEquals(new Vector2d(0, 1), MapDirection.SOUTH.toUnitVector());
+        assertEquals(new Vector2d(-1, 1), MapDirection.SOUTH_WEST.toUnitVector());
         assertEquals(new Vector2d(-1, 0), MapDirection.WEST.toUnitVector());
-        assertEquals(new Vector2d(-1, 1), MapDirection.NORTH_WEST.toUnitVector());
+        assertEquals(new Vector2d(-1, -1), MapDirection.NORTH_WEST.toUnitVector());
     }
 }
